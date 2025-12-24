@@ -2,9 +2,13 @@ use crate::parse::time::LogPrefixTime;
 
 #[derive(Clone, Debug)]
 pub struct LogPrefix {
+    /// Timestamp of the log entry, optionally including date and milliseconds
     pub time: LogPrefixTime,
+    /// Thread name from which the log originated
     pub thread: String,
+    /// Log level like INFO, WARN, ERROR
     pub level: String,
+    /// Optional context from where the log originated, like a mixin or class name
     pub context: Option<String>,
 }
 
@@ -23,7 +27,11 @@ impl LogPrefix {
         } else {
             (thread_level_context_str, None)
         };
-        let (thread_str, level_str) = thread_level_str.split_once('/')?;
+        let (thread_str, level_str) = if let Some((thread, level)) = thread_level_str.split_once('/') {
+            (thread, level)
+        } else { // e.g. "[17:26:37] [WARN] [FabricLoader/Metadata]: ..."
+            ("", thread_level_str) // No thread info, we use an empty string instead of none because this seems to be fairly rare
+        };
         let prefix = LogPrefix {
             time,
             thread: thread_str.to_string(),
@@ -84,5 +92,18 @@ mod tests {
         assert_eq!(prefix.level, "INFO");
         assert_eq!(prefix.context, Some("Di.se.di.co.re.LodQuadTree/".to_string()));
         assert_eq!(rest, "waiting for [0] futures before closing render cache...");
+    }
+
+    #[test]
+    fn test_parse_no_thread() {
+        let line = "[17:26:37] [WARN] [FabricLoader/Metadata]: The mod \"betterstats\" contains invalid entries in its mod json:";
+        let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix with no thread");
+        assert_eq!(prefix.time.hour, 17);
+        assert_eq!(prefix.time.minute, 26);
+        assert_eq!(prefix.time.second, 37);
+        assert_eq!(prefix.thread, "");
+        assert_eq!(prefix.level, "WARN");
+        assert_eq!(prefix.context, Some("FabricLoader/Metadata".to_string()));
+        assert_eq!(rest, "The mod \"betterstats\" contains invalid entries in its mod json:");
     }
 }
