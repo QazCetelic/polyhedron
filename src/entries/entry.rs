@@ -1,4 +1,4 @@
-use crate::parse::prefix::LogPrefix;
+use crate::entries::prefix::LogPrefix;
 
 #[derive(Debug)]
 pub struct LogEntry {

@@ -1,4 +1,5 @@
-use crate::parse::time::LogPrefixTime;
+use crate::entries::time::LogPrefixTime;
+
 
 #[derive(Clone, Debug)]
 pub struct LogPrefix {

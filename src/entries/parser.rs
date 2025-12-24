@@ -1,4 +1,5 @@
-use crate::parse::{entry::LogEntry, prefix::LogPrefix};
+use crate::entries::{entry::LogEntry, prefix::LogPrefix};
+
 
 pub struct LogParser {
     prefix: Option<LogPrefix>,
