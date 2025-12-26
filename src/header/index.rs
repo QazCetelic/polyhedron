@@ -1,4 +1,3 @@
-use std::io::{BufRead, Read, Seek};
 
 pub struct IndexedLogHeader<'a> {
     pub index: LogHeaderIndex,
@@ -19,7 +18,7 @@ pub struct LogHeaderIndex {
     pub mc_folder_location: Option<usize>, // e.g. "Minecraft folder is:"
     pub java_path: Option<usize>,   // e.g. "Java path is:"
     pub java_version: Option<usize>, // e.g. "Java is version"
-    pub subsystem: Option<usize>, // e.g. "Subsystem:"
+    pub pre_launch_command: Option<usize>, // e.g. "Running Pre-Launch command:"
     pub kernel_driver: Option<usize>, // e.g. "Kernel driver in use:"
     pub opengl_version: Option<usize>, // e.g. "OpenGL version string:"
     pub main_class: Option<usize>,  // e.g. "Main Class:"
@@ -64,8 +63,8 @@ fn index(log_header: &str) -> LogHeaderIndex {
     if let Some(p) = java_version {
         index = p;
     }
-    let subsystem = log_header.get(index..).and_then(|s| s.find("Subsystem:")).map(|p| p + index);
-    if let Some(p) = subsystem {
+    let pre_launch_command = log_header.get(index..).and_then(|s| s.find("Running Pre-Launch command:")).map(|p| p + index);
+    if let Some(p) = pre_launch_command {
         index = p;
     }
     let kernel_driver = log_header.get(index..).and_then(|s| s.find("Kernel driver in use:")).map(|p| p + index);
@@ -139,7 +138,7 @@ fn index(log_header: &str) -> LogHeaderIndex {
         mc_folder_location,
         java_path,
         java_version,
-        subsystem,
+        pre_launch_command,
         kernel_driver,
         opengl_version,
         main_class,

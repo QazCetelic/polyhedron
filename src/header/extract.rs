@@ -43,7 +43,13 @@ impl<'a> IndexedLogHeader<'a> {
         })
     }
 
-    // TODO get subsystem, kernel driver, opengl version, etc.
+    // TODO get hardware info, subsystem, opengl version, etc.
+
+    /// "Linux Kernel Graphics Driver, e.g. nvidia, amdgpu, intel"
+    pub fn get_graphics_kernel_driver(&self) -> Option<&'a str> {
+        // e.g. "Kernel driver in use: nvidia", "Kernel driver in use: amdgpu"
+        Some(self.header.get(self.index.kernel_driver?..)?.lines().next()?.strip_prefix("Kernel driver in use: ")?)
+    }
 
     pub fn get_main_class(&self) -> Option<&'a str> {
         Some(self.header.get(self.index.main_class?..)?.lines().skip(1).next()?.trim_ascii_start())
@@ -51,6 +57,17 @@ impl<'a> IndexedLogHeader<'a> {
 
     pub fn get_native_path(&self) -> Option<&'a str> {
         Some(self.header.get(self.index.native_path?..)?.lines().skip(1).next()?.trim_ascii_start())
+    }
+
+    pub fn get_instance_name(&self) -> Option<&'a str> {
+        let native_path = self.get_native_path()?.strip_suffix("/natives")?;
+        for (r_idx, byte) in native_path.as_bytes().iter().rev().enumerate() {
+            if *byte == b'/' || *byte == b'\\' {
+                let l_idx = native_path.len() - r_idx;
+                return Some(&native_path.get(l_idx..)?);
+            }
+        }
+        None
     }
 
     pub fn get_traits(&self) -> Option<Vec<String>> {
@@ -177,6 +194,8 @@ mod tests {
         assert_eq!(main_class_str, "io.github.zekerzhayard.forgewrapper.installer.Main");
         let native_path_str = index.get_native_path().expect("Failed to get native path");
         assert_eq!(native_path_str, "C:/Users/********/AppData/Roaming/PrismLauncher/instances/guh/natives");
+        let instance_name = index.get_instance_name().expect("Failed to get instance name");
+        assert_eq!(instance_name, "guh");
         let traits = index.get_traits().expect("Failed to get traits");
         assert_eq!(traits, vec!["feature:is_quick_play_multiplayer", "XR:Initial", "FirstThreadOnMacOS", "feature:is_quick_play_singleplayer"]);
         let libraries = index.get_libraries().expect("Failed to get libraries");
