@@ -163,12 +163,30 @@ fn index(log_header: &str) -> LogHeaderIndex {
 mod tests {
     use super::index;
     #[test]
-    fn test_locate() {
-        let string = include_str!("test_data/log_header.txt");
-        let locations = index(&string);
-        let online_mode_str = string.get(locations.online_mode.unwrap()..).and_then(|s| s.lines().next()).unwrap();
-        assert_eq!(online_mode_str, "Launched instance in online mode");
-        let mc_folder_location_str = string.get(locations.mc_folder_location.unwrap()..).and_then(|s| s.lines().skip(1).next()).unwrap();
-        assert_eq!(mc_folder_location_str, "C:/Users/********/AppData/Roaming/PrismLauncher/instances/guh/minecraft");
+    fn index_header_1() {
+        let log_header = include_str!("test_data/header_1.log");
+        let locations = index(&log_header);
+        assert_eq!(locations.online_mode, Some(41));
+        assert_eq!(locations.mc_folder_location, Some(835));
+        assert_eq!(locations.java_path, Some(930));
+        assert_eq!(locations.java_version, Some(1112));
+        assert_eq!(locations.pre_launch_command, None);
+        assert_eq!(locations.kernel_driver, None);
+        assert_eq!(locations.opengl_version, None);
+        assert_eq!(locations.main_class, Some(1185));
+        assert_eq!(locations.native_path, Some(1251));
+        assert_eq!(locations.traits, Some(1337));
+        assert_eq!(locations.libraries, Some(1473));
+        assert_eq!(locations.native_libraries, Some(13296));
+        assert_eq!(locations.mods, Some(13315));
+        assert_eq!(locations.params, Some(21507));
+        assert_eq!(locations.window_size, Some(21913));
+        assert_eq!(locations.launcher, Some(21937));
+        assert_eq!(locations.java_arguments, Some(21957));
+        assert_eq!(locations.mc_process_id, Some(22108));
+        assert_eq!(locations.jvm_info, Some(22137));
+        assert_eq!(locations.current_time, Some(22212));
+        assert_eq!(locations.created_tmp_dir, Some(22246));
+        assert_eq!(locations.building_processors, Some(22379));
     }
 }

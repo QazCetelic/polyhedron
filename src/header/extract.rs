@@ -174,11 +174,11 @@ impl<'a> IndexedLogHeader<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::header::index::{IndexedLogHeader, LogHeaderIndex};
+    use crate::header::index::{IndexedLogHeader};
 
     #[test]
     fn test_locate() {
-        let string = include_str!("test_data/log_header.txt");
+        let string = include_str!("test_data/header_1.log");
         let index = IndexedLogHeader::from_header(string);
         let online_mode = index.get_online_mode().expect("Failed to get online mode");
         assert_eq!(online_mode, true);
