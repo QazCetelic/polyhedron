@@ -11,6 +11,7 @@ pub struct ModInfo {
     pub enabled: bool,
 }
 
+#[allow(dead_code)]
 impl<'a> IndexedLogHeader<'a> {
     pub fn get_online_mode(&self) -> Option<bool> {
         let mode = self.header.get(self.index.online_mode?..)
@@ -177,7 +178,7 @@ mod tests {
     use crate::header::index::{IndexedLogHeader};
 
     #[test]
-    fn test_locate() {
+    fn extract_from_header_1() {
         let string = include_str!("test_data/header_1.log");
         let index = IndexedLogHeader::from_header(string);
         let online_mode = index.get_online_mode().expect("Failed to get online mode");
@@ -219,5 +220,50 @@ mod tests {
         assert_eq!(current_time_str, "18/09/2025 18:12:22");
         let created_tmp_dir_str = index.get_created_tmp_dir().expect("Failed to get created temp dir");
         assert_eq!(created_tmp_dir_str, "C:\\Users\\********\\AppData\\Local\\Temp\\forge_installer8903858996068324158");
+    }
+
+    #[test]
+    fn extract_from_header_2() {
+        let string = include_str!("test_data/header_2.log");
+        let index = IndexedLogHeader::from_header(string);
+        let online_mode = index.get_online_mode().expect("Failed to get online mode");
+        assert_eq!(online_mode, true);
+        let mc_folder_location_str = index.get_mc_folder_location().expect("Failed to get MC folder location");
+        assert_eq!(mc_folder_location_str, "/var/home/RIX/.local/share/PrismLauncher/instances/Aleradas-openBeta-2.0.0/minecraft");
+        let java_path_str = index.get_java_path().expect("Failed to get Java path");
+        assert_eq!(java_path_str, "/var/home/RIX/.local/share/PrismLauncher/java/java-runtime-gamma/bin/java");
+        let java_version_info = index.get_java_version().expect("Failed to get Java version");
+        assert_eq!(java_version_info.version, "17.0.15");
+        assert_eq!(java_version_info.architecture, "64 (amd64)");
+        assert_eq!(java_version_info.vendor, "Microsoft");
+        let main_class_str = index.get_main_class().expect("Failed to get main class");
+        assert_eq!(main_class_str, "net.fabricmc.loader.impl.launch.knot.KnotClient");
+        let native_path_str = index.get_native_path().expect("Failed to get native path");
+        assert_eq!(native_path_str, "/var/home/RIX/.local/share/PrismLauncher/instances/Aleradas-openBeta-2.0.0/natives");
+        let instance_name = index.get_instance_name().expect("Failed to get instance name");
+        assert_eq!(instance_name, "Aleradas-openBeta-2.0.0");
+        let traits = index.get_traits().expect("Failed to get traits");
+        assert_eq!(traits, vec!["feature:is_quick_play_multiplayer", "XR:Initial", "feature:is_quick_play_singleplayer", "FirstThreadOnMacOS"]);
+        let libraries = index.get_libraries().expect("Failed to get libraries");
+        assert!(libraries.contains(&"/var/home/RIX/.local/share/PrismLauncher/libraries/org/lwjgl/lwjgl-glfw/3.3.1/lwjgl-glfw-3.3.1.jar".to_string()));
+        let mods = index.get_mods().expect("Failed to get mods");
+        assert!(mods.iter().any(|m| m.name == "Botania-1.20.1-448-FABRIC" && m.enabled));
+        let params_str = index.get_params().expect("Failed to get params");
+        assert!(params_str.starts_with("--username  --version 1.20.1 --gameDir"));
+        let (width, height) = index.get_window_size().expect("Failed to get window size");
+        assert_eq!(width, 854);
+        assert_eq!(height, 480);
+        let java_arguments = index.get_java_arguments().expect("Failed to get Java arguments");
+        assert_eq!(java_arguments, vec!["-Xms512m", "-Xmx10024m", "-Duser.language=en"]);
+        let mc_process_id = index.get_mc_process_id().expect("Failed to get MC process ID");
+        assert_eq!(mc_process_id, 6506);
+        let jvm_info_str = index.get_jvm_info();
+        assert_eq!(jvm_info_str, None);
+        let ipv4_preferred = index.get_ipv4_preferred();
+        assert_eq!(ipv4_preferred, None);
+        let current_time_str = index.get_current_time();
+        assert_eq!(current_time_str, None);
+        let created_tmp_dir_str = index.get_created_tmp_dir();
+        assert_eq!(created_tmp_dir_str, None);
     }
 }

@@ -4,6 +4,7 @@ pub struct IndexedLogHeader<'a> {
     pub header: &'a str,
 }
 
+#[allow(dead_code)]
 impl IndexedLogHeader<'_> {
     pub fn from_header(header: &str) -> IndexedLogHeader {
         IndexedLogHeader {
@@ -13,6 +14,7 @@ impl IndexedLogHeader<'_> {
     }
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LogHeaderIndex {
     pub online_mode: Option<usize>, // L4 e.g. "Launched instance in online mode" + DNS or "Launched instance in offline mode"
     pub mc_folder_location: Option<usize>, // e.g. "Minecraft folder is:"

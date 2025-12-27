@@ -1,12 +1,14 @@
 use crate::entries::{entry::LogEntry, prefix::LogPrefix};
 
 
-pub struct LogParser {
+#[allow(dead_code)]
+pub struct LogEntryParser {
     prefix: Option<LogPrefix>,
     contents: String,
 }
 
-impl LogParser {
+#[allow(dead_code)]
+impl LogEntryParser {
     pub fn new() -> Self {
         Self {
             prefix: None,

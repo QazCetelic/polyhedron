@@ -1,3 +1,3 @@
-mod identify;
-mod index;
-mod extract;
+pub mod identify;
+pub mod index;
+pub mod extract;

@@ -15,14 +15,15 @@ impl LauncherVariant {
     }
 }
 
-struct LauncherInfo {
+pub struct LauncherInfo {
     variant: LauncherVariant,
     version: String,
     distribution: Option<String>,
 }
 
+#[allow(dead_code)]
 impl LauncherInfo {
-    fn from_first_line(log: &str) -> Option<Self> {
+    pub fn from_first_line(log: &str) -> Option<Self> {
         // e.g. "Prism Launcher version: 9.4 (official)", "MultiMC version: 0.7.0-4230", "Prism Launcher version: 9.4 (flatpak)"
         let first_line = log.lines().next()?;
         let (variant_str, variant_and_distribution) = first_line.split_once(" version: ")?;

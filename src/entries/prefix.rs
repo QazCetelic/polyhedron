@@ -1,6 +1,7 @@
 use crate::entries::time::LogPrefixTime;
 
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug)]
 pub struct LogPrefix {
     /// Timestamp of the log entry, optionally including date and milliseconds

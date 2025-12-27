@@ -1,3 +1,4 @@
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug)]
 pub struct LogPrefixDate {
     pub day: u8,
@@ -5,6 +6,7 @@ pub struct LogPrefixDate {
     pub year: u16,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug)]
 pub struct LogPrefixTime {
     pub date: Option<LogPrefixDate>,
