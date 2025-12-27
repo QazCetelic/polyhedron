@@ -14,13 +14,34 @@ pub struct LogPrefix {
     pub context: Option<String>,
 }
 
+// Not fully to spec, but functional
+fn basic_strip_ansi_escape(mut line: &str) -> &str {
+    while let Some(escape_pos) = line.find(27 as char) {
+        let end_pos = line.get(escape_pos..).map(|l| l.find('m')).flatten();
+        match end_pos {
+            Some(pos) => {
+                if let Some(l) = line.get(pos + 1..) {
+                    line = l;
+                }
+            },
+            None => {
+                if let Some(l) = line.get(1..) {
+                    line = l;
+                }
+            },
+        }
+    }
+    line
+}
+
 impl LogPrefix {
     /// Parses a log line prefix and returns the LogPrefix and the rest of the line if successful.
     pub fn parse(line: &str) -> Option<(LogPrefix, &str)> {
         // "[16:20:50] [Client thread/INFO]: LWJGL Version: 2.9.4"
         // "[17:26:36.877] [main/INFO] [loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file..."
 
-        let (time_part, rest) = line.split_once("] [")?;
+        let stripped = basic_strip_ansi_escape(line); // Get rid of ANSI color prefix
+        let (time_part, rest) = stripped.split_once("] [")?;
         let time_str = time_part.strip_prefix('[')?; // "16:20:50"
         let time = LogPrefixTime::parse(time_str)?;
         let (thread_level_context_str, rest_of_line) = rest.split_once("]: ")?;
@@ -107,5 +128,19 @@ mod tests {
         assert_eq!(prefix.level, "WARN");
         assert_eq!(prefix.context, Some("FabricLoader/Metadata".to_string()));
         assert_eq!(rest, "The mod \"betterstats\" contains invalid entries in its mod json:");
+    }
+
+    #[test]
+    fn test_strip_ansi() {
+        let line = "[m[32m[21:03:47.697] [main/INFO] [EARLYDISPLAY/]: Trying GL version 4.6";
+        let stripped_line = basic_strip_ansi_escape(line);
+        assert_eq!(stripped_line, "[21:03:47.697] [main/INFO] [EARLYDISPLAY/]: Trying GL version 4.6");
+    }
+
+    #[test]
+    fn test_handles_escape_characters() {
+        let line = "[m[32m[21:03:47.697] [main/INFO] [EARLYDISPLAY/]: Trying GL version 4.6";
+        let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix with ANSI escape codes");
+        assert_eq!(prefix.time.hour, 21);
     }
 }

@@ -1,4 +1,5 @@
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 enum LauncherVariant {
     PrismLauncher,
     MultiMC,
@@ -15,6 +16,7 @@ impl LauncherVariant {
     }
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LauncherInfo {
     variant: LauncherVariant,
     version: String,

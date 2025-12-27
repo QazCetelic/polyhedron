@@ -1,11 +1,15 @@
+use std::collections::VecDeque;
+
 use crate::header::index::IndexedLogHeader;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct JavaVersionInfo {
     pub version: String,
     pub architecture: String,
     pub vendor: String,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ModInfo {
     pub name: String,
     pub enabled: bool,
@@ -44,10 +48,33 @@ impl<'a> IndexedLogHeader<'a> {
         })
     }
 
-    // TODO get hardware info, subsystem, opengl version, etc.
+    pub fn get_hardware_info(&self) -> Option<String> {
+        let java_version_index = self.index.java_version?;
+        let kernel_driver_index = self.index.kernel_driver?;
+        let str = self.header.get(java_version_index..kernel_driver_index)?;
+        
+        let mut lines: VecDeque<&str> = str.lines().collect();
+        lines.pop_front()?; // // Removes java version line
+        lines.pop_back()?; // Remove kernel driver line
+
+        while lines.front()?.is_empty() {
+            lines.pop_front();
+        }
+        while lines.back()?.is_empty() {
+            lines.pop_back();
+        }
+
+        let lines_vec: Vec<&str> = lines.into(); 
+        Some(lines_vec.join("\n"))
+    }
+
+    pub fn get_opengl_version(&self) -> Option<&'a str> {
+        // e.g. "OpenGL version string: 4.6 (Compatibility Profile) Mesa 25.2.7"
+        Some(self.header.get(self.index.opengl_version?..)?.lines().next()?.strip_prefix("OpenGL version string: ")?)
+    }
 
     /// "Linux Kernel Graphics Driver, e.g. nvidia, amdgpu, intel"
-    pub fn get_graphics_kernel_driver(&self) -> Option<&'a str> {
+    pub fn get_kernel_driver(&self) -> Option<&'a str> {
         // e.g. "Kernel driver in use: nvidia", "Kernel driver in use: amdgpu"
         Some(self.header.get(self.index.kernel_driver?..)?.lines().next()?.strip_prefix("Kernel driver in use: ")?)
     }
@@ -175,12 +202,14 @@ impl<'a> IndexedLogHeader<'a> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::VecDeque;
+
     use crate::header::index::{IndexedLogHeader};
 
     #[test]
     fn extract_from_header_1() {
         let string = include_str!("test_data/header_1.log");
-        let index = IndexedLogHeader::from_header(string);
+        let index = IndexedLogHeader::index_header(string);
         let online_mode = index.get_online_mode().expect("Failed to get online mode");
         assert_eq!(online_mode, true);
         let mc_folder_location_str = index.get_mc_folder_location().expect("Failed to get MC folder location");
@@ -191,6 +220,8 @@ mod tests {
         assert_eq!(java_version_info.version, "17.0.1");
         assert_eq!(java_version_info.architecture, "64 (amd64)");
         assert_eq!(java_version_info.vendor, "Microsoft");
+        let kernel_driver_in_use = index.get_kernel_driver();
+        assert_eq!(kernel_driver_in_use, None);
         let main_class_str = index.get_main_class().expect("Failed to get main class");
         assert_eq!(main_class_str, "io.github.zekerzhayard.forgewrapper.installer.Main");
         let native_path_str = index.get_native_path().expect("Failed to get native path");
@@ -225,7 +256,7 @@ mod tests {
     #[test]
     fn extract_from_header_2() {
         let string = include_str!("test_data/header_2.log");
-        let index = IndexedLogHeader::from_header(string);
+        let index = IndexedLogHeader::index_header(string);
         let online_mode = index.get_online_mode().expect("Failed to get online mode");
         assert_eq!(online_mode, true);
         let mc_folder_location_str = index.get_mc_folder_location().expect("Failed to get MC folder location");
@@ -236,6 +267,12 @@ mod tests {
         assert_eq!(java_version_info.version, "17.0.15");
         assert_eq!(java_version_info.architecture, "64 (amd64)");
         assert_eq!(java_version_info.vendor, "Microsoft");
+        let kernel_driver_in_use = index.get_kernel_driver().expect("Failed to get kernel driver");
+        assert_eq!(kernel_driver_in_use, "amdgpu");
+        let hardware_info = index.get_hardware_info().expect("Failed to get hardware info");
+        assert_eq!(hardware_info, "AMD Ryzen 5 7600X 6-Core Processor\nAdvanced Micro Devices, Inc. [AMD/ATI] Navi 44 [Radeon RX 9060 XT] (rev c0)\n\nSubsystem: XFX Limited Device 8601");
+        let opengl_version = index.get_opengl_version().expect("Failed to get OpenGL version");
+        assert_eq!(opengl_version, "4.6 (Compatibility Profile) Mesa 25.2.7");
         let main_class_str = index.get_main_class().expect("Failed to get main class");
         assert_eq!(main_class_str, "net.fabricmc.loader.impl.launch.knot.KnotClient");
         let native_path_str = index.get_native_path().expect("Failed to get native path");
