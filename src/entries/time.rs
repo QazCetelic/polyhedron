@@ -17,7 +17,10 @@ pub struct LogPrefixTime {
 }
 
 impl LogPrefixTime {
-    pub fn parse(time_str: &str) -> Option<LogPrefixTime> {
+    pub fn parse(time_str: &str) -> Option<Self> {
+        if let Some(time) = Self::parse_rfc_3339(time_str) {
+            return Some(time);
+        }
         let (without_suffix, _is_pm) = strip_meridiem(time_str);
         let space_index = without_suffix.find(' ');
         let (date, time_part) = if let Some(index) = space_index {
@@ -45,6 +48,24 @@ impl LogPrefixTime {
             millisecond,
         };
         Some(time)
+    }
+
+    pub(crate) fn parse_rfc_3339(time_str: &str) -> Option<Self> {
+        // e.g. "2025-10-30T19:21:06.036061Z"
+        let (date_str, time_str) = time_str.strip_suffix('Z')?.split_once('T')?;
+        let year: u16 = date_str.get(0..4)?.parse().ok()?;
+        let month: u8 = date_str.get(5..7)?.parse().ok()?;
+        let day: u8 = date_str.get(8..10)?.parse().ok()?;
+        let date = LogPrefixDate {
+            day,
+            month,
+            year,
+        };
+        let hour: u8 = time_str.get(0..2)?.parse().ok()?;
+        let minute: u8 = time_str.get(3..5)?.parse().ok()?;
+        let second: u8 = time_str.get(6..8)?.parse().ok()?;
+        let millisecond: u16 = time_str.get(9..12)?.parse().ok()?;
+        Some(LogPrefixTime { date: Some(date), hour, minute, second, millisecond: Some(millisecond) })
     }
 }
 
@@ -157,6 +178,17 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_rfc3339() {
+        let time_str = "2025-10-30T19:21:06.036061Z";
+        let time = LogPrefixTime::parse(time_str).expect("Failed to parse RFC3339 time");
+        assert_eq!(time.date.map(|d| (d.day, d.month, d.year)), Some((30, 10, 2025)));
+        assert_eq!(time.hour, 19);
+        assert_eq!(time.minute, 21);
+        assert_eq!(time.second, 06);
+        assert_eq!(time.millisecond, Some(036));
+    }
+
+    #[test]
     fn test_parse_various_formats() {
         let examples = vec![
             "01:53:30",
@@ -174,6 +206,7 @@ mod tests {
             "12Oct2025 00:41:16.062",
             "12Oct2025 00:41:16.572",
             "12Sept2025 00:41:16.572",
+            "2025-10-30T19:21:06.036061Z",
             "08:01:29.968",
             "08:33:03.106",
             "08:33:03.471",

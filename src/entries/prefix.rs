@@ -37,31 +37,46 @@ fn basic_strip_ansi_escape(mut line: &str) -> &str {
 impl LogPrefix {
     /// Parses a log line prefix and returns the LogPrefix and the rest of the line if successful.
     pub fn parse(line: &str) -> Option<(LogPrefix, &str)> {
+        let stripped = basic_strip_ansi_escape(line); // Get rid of ANSI color prefix
+
         // "[16:20:50] [Client thread/INFO]: LWJGL Version: 2.9.4"
         // "[17:26:36.877] [main/INFO] [loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file..."
-
-        let stripped = basic_strip_ansi_escape(line); // Get rid of ANSI color prefix
-        let (time_part, rest) = stripped.split_once("] [")?;
-        let time_str = time_part.strip_prefix('[')?; // "16:20:50"
-        let time = LogPrefixTime::parse(time_str)?;
-        let (thread_level_context_str, rest_of_line) = rest.split_once("]: ")?;
-        let (thread_level_str, context_str_opt) = if let Some((before, after)) = thread_level_context_str.rsplit_once("] [") {
-            (before, Some(after))
-        } else {
-            (thread_level_context_str, None)
-        };
-        let (thread_str, level_str) = if let Some((thread, level)) = thread_level_str.split_once('/') {
-            (thread, level)
-        } else { // e.g. "[17:26:37] [WARN] [FabricLoader/Metadata]: ..."
-            ("", thread_level_str) // No thread info, we use an empty string instead of none because this seems to be fairly rare
-        };
-        let prefix = LogPrefix {
-            time,
-            thread: thread_str.to_string(),
-            level: level_str.to_string(),
-            context: context_str_opt.map(|s| s.to_string()),
-        };
-        Some((prefix, rest_of_line))
+        if let Some(stripped) = stripped.strip_prefix('[') {
+            let (time_str, rest) = stripped.split_once("] [")?;
+            let time = LogPrefixTime::parse(time_str)?; // "16:20:50"
+            let (thread_level_context_str, rest_of_line) = rest.split_once("]: ")?;
+            let (thread_level_str, context_str_opt) = if let Some((before, after)) = thread_level_context_str.rsplit_once("] [") {
+                (before, Some(after))
+            } else {
+                (thread_level_context_str, None)
+            };
+            let (thread_str, level_str) = if let Some((thread, level)) = thread_level_str.split_once('/') {
+                (thread, level)
+            } else { // e.g. "[17:26:37] [WARN] [FabricLoader/Metadata]: ..."
+                ("", thread_level_str) // No thread info, we use an empty string instead of none because this seems to be fairly rare
+            };
+            let prefix = LogPrefix {
+                time,
+                thread: thread_str.to_string(),
+                level: level_str.to_string(),
+                context: context_str_opt.map(|s| s.to_string()),
+            };
+            Some((prefix, rest_of_line))
+        }
+        // "2025-10-30T19:21:06.036061Z main WARN Advanced terminal features are not available in this environment"
+        else {
+            let (time_str, rest) = stripped.split_once(' ')?;
+            let time = LogPrefixTime::parse(time_str)?; // "2025-10-30T19:21:06.036061Z"
+            let (thread_str, rest) = rest.split_once(' ')?;
+            let (level_str, rest) = rest.split_once(' ')?;
+            let prefix = LogPrefix {
+                time,
+                thread: thread_str.to_string(),
+                level: level_str.to_string(),
+                context: None,
+            };
+            Some((prefix, rest))
+        }
     }
 }
 
@@ -138,9 +153,15 @@ mod tests {
     }
 
     #[test]
-    fn test_handles_escape_characters() {
+    fn test_parse_ansi() {
         let line = "[m[32m[21:03:47.697] [main/INFO] [EARLYDISPLAY/]: Trying GL version 4.6";
         let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix with ANSI escape codes");
         assert_eq!(prefix.time.hour, 21);
+    }
+
+    #[test]
+    fn test_parse_no_brackets() {
+        let line = "2025-10-30T19:21:06.036061Z main WARN Advanced terminal features are not available in this environment";
+        let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix with no brackets and RFC3339 timestamp");
     }
 }
