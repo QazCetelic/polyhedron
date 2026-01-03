@@ -6,6 +6,8 @@ use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix
 
 mod entries;
 mod header;
+mod issues;
+mod parse;
 
 #[derive(Error, Debug)]
 pub enum ReadLogError {
