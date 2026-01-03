@@ -13,4 +13,17 @@ pub enum Issue {
     ForgeJava,
     #[error("Intel HD Windows 10")]
     IntelHd,
+    /// Argument is the Java arg to remove
+    #[error("Wrong Java Option")]
+    JavaOption(String),
+    #[error("Crash with pre-1.13 and Java 9+")]
+    Lwjgl2Java9,
+    #[error("MacOS NSInternalInconsistencyException")]
+    MacOSNSInternal,
+    #[error("Out of Memory")]
+    Oom,
+    #[error("Optifine enabled")]
+    Optifine,
+    #[error("Outdated launcher")]
+    OutdatedLauncher,
 }
