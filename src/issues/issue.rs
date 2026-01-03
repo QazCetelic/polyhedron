@@ -17,7 +17,7 @@ pub enum Issue {
     #[error("Wrong Java Option")]
     JavaOption(String),
     #[error("Crash with pre-1.13 and Java 9+")]
-    Lwjgl2Java9,
+    Lwjgl2JavaAbove8,
     #[error("MacOS NSInternalInconsistencyException")]
     MacOSNSInternal,
     #[error("Out of Memory")]
@@ -26,4 +26,9 @@ pub enum Issue {
     Optifine,
     #[error("Outdated launcher")]
     OutdatedLauncher,
+    #[error("These versions of Minecraft use an outdated version of Netty which does not properly support Java 9")]
+    NettyJavaAbove8,
+    /// Argument is the recommended java version (major)
+    #[error("Wrong Java Version")]
+    WrongJava(Option<u32>),
 }

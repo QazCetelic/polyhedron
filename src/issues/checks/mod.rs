@@ -9,3 +9,5 @@ pub mod macos_ns;
 pub mod oom;
 pub mod optifine;
 pub mod outdated_launcher;
+pub mod native_transport;
+pub mod wrong_java;
