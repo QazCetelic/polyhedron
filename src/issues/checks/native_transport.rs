@@ -1,8 +1,8 @@
-use crate::issues::issue::Issue;
+use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
-fn pre_1_12_native_transport_java_9(entry_text: &str) -> Option<Issue> {
+pub(crate) fn pre_1_12_native_transport_java_9(entry: &LogEntry) -> Option<Issue> {
     // This could be improved to reduce false positives with the stacktrace parser when more data is available
-    entry_text.contains("at io.netty.channel.epoll").then_some(Issue::NettyJavaAbove8)
+    entry.contents.contains("at io.netty.channel.epoll").then_some(Issue::NettyJavaAbove8)
 }
 
 #[cfg(test)]
@@ -56,7 +56,8 @@ java.lang.IndexOutOfBoundsException: readerIndex(1) + length(1) exceeds writerIn
 [00:15:55] [Netty Epoll Server IO #1/WARN]: <------ Packet Data Export: ------>
 [00:15:55] [Netty Epoll Server IO #1/WARN]: Packet:class_2540 
 ";
-        let issue = pre_1_12_native_transport_java_9(&text).expect("Failed to determine issue");
+        let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+        let issue = entries.iter().filter_map(|e| pre_1_12_native_transport_java_9(e)).next().expect("Failed to determine issue");
         assert_eq!(issue, Issue::NettyJavaAbove8);
     }
 }

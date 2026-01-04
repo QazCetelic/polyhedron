@@ -1,7 +1,7 @@
-use crate::issues::issue::Issue;
+use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
-fn old_java_macos(entry_text: &str) -> Option<Issue> {
-   entry_text.contains("~StubRoutines::SafeFetch32").then_some(Issue::OldJavaMacOs)
+pub(crate) fn old_java_macos(entry: &LogEntry) -> Option<Issue> {
+   entry.contents.contains("~StubRoutines::SafeFetch32").then_some(Issue::OldJavaMacOs)
 }
 
 #[cfg(test)]
@@ -26,7 +26,8 @@ mod tests {
 #
 # No core dump will be written. Core dumps have been disabled. To enable core dumping, try "ulimit -c unlimited" before starting Java again
 #"#;
-        let issue = old_java_macos(&text).expect("Failed to determine issue");
+        let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+        let issue = entries.iter().filter_map(|e| old_java_macos(e)).next().expect("Failed to determine issue");
         assert_eq!(issue, Issue::OldJavaMacOs);
     }
 }

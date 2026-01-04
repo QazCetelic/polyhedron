@@ -1,13 +1,11 @@
-use crate::{header::extract::LibraryInfo, issues::issue::Issue};
+use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
-fn missing_indium(entry_text: &str) -> Option<Issue> {
-    entry_text.contains("Cannot invoke \"net.fabricmc.fabric.api.renderer.v1.Renderer.meshBuilder()\"").then_some(Issue::MissingIndium)
+pub(crate) fn missing_indium(entry: &LogEntry) -> Option<Issue> {
+    entry.contents.contains("Cannot invoke \"net.fabricmc.fabric.api.renderer.v1.Renderer.meshBuilder()\"").then_some(Issue::MissingIndium)
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::header::index::IndexedLogHeader;
-
     use super::*;
 
     #[test]
@@ -45,7 +43,8 @@ Caused by: java.lang.NullPointerException: Cannot invoke "net.fabricmc.fabric.ap
 	at net.minecraft.class_898.method_3954(class_898.java:145) ~[client-intermediary.jar:?]
 	... 13 more
 "#;
-        let issue = missing_indium(&text).expect("Failed to determine issue");
+        let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+        let issue = entries.iter().filter_map(|e| missing_indium(e)).next().expect("Failed to determine issue");
         assert_eq!(issue, Issue::MissingIndium);
     }
 }

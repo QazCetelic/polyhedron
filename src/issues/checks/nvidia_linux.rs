@@ -1,7 +1,7 @@
 use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
-fn nvidia_linux(text: &str) -> Option<Issue> {
-    text.contains("# C  [libnvidia-glcore.so").then_some(Issue::NvidiaLinux)
+pub(crate) fn nvidia_linux(entry: &LogEntry) -> Option<Issue> {
+    entry.contents.contains("# C  [libnvidia-glcore.so").then_some(Issue::NvidiaLinux)
 }
 
 #[cfg(test)]
@@ -39,7 +39,8 @@ mod tests {
 #
 REDACTED.
 Log upload triggered at: 18 Aug 2025 02:57:31  0300"#;
-        let issue = nvidia_linux(&text).expect("Failed to determine issue");
+        let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+        let issue = entries.iter().filter_map(|e| nvidia_linux(e)).next().expect("Failed to determine issue");
         assert_eq!(issue, Issue::NvidiaLinux);
     }
 }

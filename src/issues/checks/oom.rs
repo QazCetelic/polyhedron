@@ -1,7 +1,7 @@
-use crate::issues::issue::Issue;
+use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
-fn oom(text: &str) -> Option<Issue> {
-    text.contains("java.lang.OutOfMemoryError").then_some(Issue::Oom)
+pub(crate) fn oom(entry: &LogEntry) -> Option<Issue> {
+    entry.contents.contains("java.lang.OutOfMemoryError").then_some(Issue::Oom)
 }
 
 #[cfg(test)]
@@ -45,7 +45,8 @@ java.lang.OutOfMemoryError: null
     at org.prismlauncher.EntryPoint.listen(EntryPoint.java:126) ~[NewLaunch.jar:?]
     at org.prismlauncher.EntryPoint.main(EntryPoint.java:71) ~[NewLaunch.jar:?]
 ";
-        let issue = oom(&text).expect("Failed to determine issue");
+        let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+        let issue = entries.iter().filter_map(|e| oom(e)).next().expect("Failed to determine issue");
         assert_eq!(issue, Issue::Oom);
     }
 }

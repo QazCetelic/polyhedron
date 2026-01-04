@@ -1,6 +1,6 @@
 use crate::issues::issue::Issue;
 
-fn x11_connect_failure(text: &str) -> Option<Issue> {
+pub(crate) fn x11_connect_failure(text: &str) -> Option<Issue> {
     let found = text.contains("Can't connect to X11 window server using ':0.0' as the value of the DISPLAY variable")
         || text.contains("Could not open X display connection");
 	found.then_some(Issue::X11ConnectFailure)

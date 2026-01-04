@@ -2,7 +2,7 @@ use lazy_regex::regex;
 
 use crate::issues::issue::Issue;
 
-fn wrong_java(text: &str) -> Option<Issue> {
+pub(crate) fn wrong_java(text: &str) -> Option<Issue> {
     let switch_version_regex = regex!(r"Please switch to one of the following Java versions for this instance:[\r\n]+(Java version [\d.]+)");
 
     if let Some(captures) = switch_version_regex.captures(text) {

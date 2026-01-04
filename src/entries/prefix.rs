@@ -174,13 +174,12 @@ mod tests {
     }
 
     // #[test]
-    // fn test_other2() {
+    // fn test_without_level() {
     //     let line = "[17:23:00] [Client-Main] 24 Achievements";
     //     let (prefix, _rest) = LogPrefix::parse(line).expect("Failed to parse prefix");
     //     assert_eq!(prefix.level, "ERROR");
     // }
 
-    // TODO
     // #[test]
     // fn test_parse_partial_brackets() {
     //     let line = "2024-07-11 04:30:53 [INFO] [ForgeModLoader] [AppEng] Core Init";

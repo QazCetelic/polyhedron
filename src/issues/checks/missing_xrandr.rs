@@ -1,7 +1,7 @@
-use crate::issues::issue::Issue;
+use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
-fn missing_xrandr(text: &str) -> Option<Issue> {
-   text.contains("at org.lwjgl.opengl.LinuxDisplay.getAvailableDisplayModes").then_some(Issue::MissingXrandr)
+pub(crate) fn missing_xrandr(entry: &LogEntry) -> Option<Issue> {
+   entry.contents.contains("at org.lwjgl.opengl.LinuxDisplay.getAvailableDisplayModes").then_some(Issue::MissingXrandr)
 }
 
 #[cfg(test)]
@@ -39,7 +39,8 @@ Caused by: java.lang.ArrayIndexOutOfBoundsException: 0
 	at org.lwjgl.opengl.Display.<clinit>(Display.java:138)
 	... 13 more
 "#;
-        let issue = missing_xrandr(&text).expect("Failed to determine issue");
+        let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+        let issue = entries.iter().filter_map(|e| missing_xrandr(e)).next().expect("Failed to determine issue");
         assert_eq!(issue, Issue::MissingXrandr);
     }
 }

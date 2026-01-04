@@ -32,28 +32,38 @@ pub mod corrupted_instance;
 pub mod invalid_proxy;
 
 #[allow(dead_code)]
-const CHECKS_FULL_LOG: [for<'a> fn(&str) -> Option<super::issue::Issue>; 5] = [
+const CHECKS_FULL_LOG: [for<'a> fn(&str) -> Option<super::issue::Issue>; 6] = [
     checksum_mismatch::checksum_mismatch,
     fabric_internal::fabric_internal,
     invalid_proxy::invalid_proxy,
     java_32_bit::java_32_bit,
     java_option::java_option,
+    x11_connect_failure::x11_connect_failure,
 ];
 
 #[allow(dead_code)]
-const CHECKS_HEADER: [for<'a> fn(&str) -> Option<super::issue::Issue>; 4] = [
+const CHECKS_HEADER: [for<'a> fn(&str) -> Option<super::issue::Issue>; 5] = [
     corrupted_instance::corrupted_instance,
     invalid_folder_name::invalid_folder_name,
     lexforge_zlibng::lexforge_zlibng,
     locked_jar::locked_jar,
+    wrong_java::wrong_java,
 ];
 
 #[allow(dead_code)]
-const CHECKS_ENTRIES: [for<'a> fn(&LogEntry) -> Option<Issue>; 5] = [
+const CHECKS_ENTRIES: [for<'a> fn(&LogEntry) -> Option<Issue>; 13] = [
     flatpak_nvidia::flatpak_nvidia,
     forge_java::forge_java,
     forge_missing_dependencies::forge_missing_dependencies,
     // intel_hd::intel_hd,
     intermediary_mappings::intermediary_mappings,
     linux_openal::linux_openal,
+    macos_ns::macos_ns,
+    missing_indium::missing_indium,
+    missing_xrandr::missing_xrandr,
+    native_transport::pre_1_12_native_transport_java_9,
+    no_disk_space::no_disk_space,
+    nvidia_linux::nvidia_linux,
+    old_java_macos::old_java_macos,
+    oom::oom,
 ];

@@ -1,7 +1,7 @@
-use crate::issues::issue::Issue;
+use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
-fn no_disk_space(entry_text: &str) -> Option<Issue> {
-    entry_text.contains("There is not enough space on the disk").then_some(Issue::NoDiskSpace)
+pub(crate) fn no_disk_space(entry: &LogEntry) -> Option<Issue> {
+    entry.contents.contains("There is not enough space on the disk").then_some(Issue::NoDiskSpace)
 }
 
 #[cfg(test)]
@@ -79,7 +79,8 @@ java.io.IOException: There is not enough space on the disk
 		at java.lang.Thread.run(Thread.java:833) ~[?:?] {re:mixin}
 [21:27:47] [Thread-77/INFO] [xa.ma.WorldMap/]: Retrying...
 "#;
-        let issue = no_disk_space(&text).expect("Failed to determine issue");
+        let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+        let issue = entries.iter().filter_map(|e| no_disk_space(e)).next().expect("Failed to determine issue");
         assert_eq!(issue, Issue::NoDiskSpace);
     }
 }
