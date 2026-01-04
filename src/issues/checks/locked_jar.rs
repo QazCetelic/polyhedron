@@ -1,6 +1,6 @@
 use crate::issues::issue::Issue;
 
-fn locked_jar(header_text: &str) -> Option<Issue> {
+pub(crate) fn locked_jar(header_text: &str) -> Option<Issue> {
     const EXTRACT_FAIL_PREFIX: &str = "Couldn't extract native jar '";
     let mut index: usize = 0;
     let mut jars = Vec::new();
@@ -18,6 +18,7 @@ fn locked_jar(header_text: &str) -> Option<Issue> {
 #[cfg(test)]
 mod tests {
     use core::panic;
+    use std::vec;
 
     use crate::issues::issue::Issue;
 
@@ -34,7 +35,8 @@ Clipboard copy at: 11 Jan 2025 12:37:41 +0200
 ";
 
         let issue = locked_jar(&header_fragment).expect("Failed to determine issue");
-        // assert_eq!(issue, Issue::LockedJars);
+        let Issue::LockedJars(locked_jars) = issue else { panic!("Not LockedJars issue"); };
+        assert_eq!(locked_jars, ["C:/Users/REDACTED/AppData/Roaming/PrismLauncher/libraries/com/mojang/text2speech/1.12.4/text2speech-1.12.4-natives-windows.jar"]);
     }
 
     #[test]

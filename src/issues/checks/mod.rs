@@ -1,3 +1,5 @@
+use crate::{entries::entry::LogEntry, issues::issue::Issue};
+
 pub mod flatpak_nvidia;
 pub mod fabric_internal;
 pub mod lexforge_zlibng;
@@ -28,3 +30,30 @@ pub mod missing_xrandr;
 pub mod invalid_folder_name;
 pub mod corrupted_instance;
 pub mod invalid_proxy;
+
+#[allow(dead_code)]
+const CHECKS_FULL_LOG: [for<'a> fn(&str) -> Option<super::issue::Issue>; 5] = [
+    checksum_mismatch::checksum_mismatch,
+    fabric_internal::fabric_internal,
+    invalid_proxy::invalid_proxy,
+    java_32_bit::java_32_bit,
+    java_option::java_option,
+];
+
+#[allow(dead_code)]
+const CHECKS_HEADER: [for<'a> fn(&str) -> Option<super::issue::Issue>; 4] = [
+    corrupted_instance::corrupted_instance,
+    invalid_folder_name::invalid_folder_name,
+    lexforge_zlibng::lexforge_zlibng,
+    locked_jar::locked_jar,
+];
+
+#[allow(dead_code)]
+const CHECKS_ENTRIES: [for<'a> fn(&LogEntry) -> Option<Issue>; 5] = [
+    flatpak_nvidia::flatpak_nvidia,
+    forge_java::forge_java,
+    forge_missing_dependencies::forge_missing_dependencies,
+    // intel_hd::intel_hd,
+    intermediary_mappings::intermediary_mappings,
+    linux_openal::linux_openal,
+];

@@ -1,7 +1,7 @@
-use crate::issues::issue::Issue;
+use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
-fn forge_java(text: &str) -> Option<Issue> {
-    if text.contains("java.lang.NoSuchMethodError: sun.security.util.ManifestEntryVerifier.<init>(Ljava/util/jar/Manifest;)V") {
+pub(crate) fn forge_java(entry: &LogEntry) -> Option<Issue> {
+    if entry.contents.contains("java.lang.NoSuchMethodError: sun.security.util.ManifestEntryVerifier.<init>(Ljava/util/jar/Manifest;)V") {
         Some(Issue::ForgeJava)
     }
     else {
@@ -15,7 +15,7 @@ mod tests {
 
     #[test]
     fn matches_forge_java() {
-        let text = "[21:05:17] [main/ERROR] [mixin/]: Mixin config antiqueatlas.mixins.json does not specify \"minVersion\" property
+        let text = r#"[21:05:17] [main/ERROR] [mixin/]: Mixin config antiqueatlas.mixins.json does not specify \"minVersion\" property
 Exception caught from launcher
 java.lang.reflect.InvocationTargetException
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
@@ -49,9 +49,11 @@ Caused by: java.lang.NoSuchMethodError: sun.security.util.ManifestEntryVerifier.
 	at cpw.mods.modlauncher.Launcher.run(Launcher.java:82)
 	at cpw.mods.modlauncher.Launcher.main(Launcher.java:66)
 	... 8 more
-Exiting with ERROR";
+Exiting with ERROR"#;
 
-        let issue = forge_java(&text).expect("Failed to determine issue");
+		let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+		assert_eq!(entries.len(), 1);
+        let issue = entries.iter().filter_map(|e| forge_java(e)).next().expect("Failed to determine issue");
         assert_eq!(issue, Issue::ForgeJava);
     }
 }

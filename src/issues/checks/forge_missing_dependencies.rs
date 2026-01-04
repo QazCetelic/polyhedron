@@ -1,7 +1,7 @@
-use crate::issues::issue::Issue;
+use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
-fn forge_missing_dependencies(entry_text: &str) -> Option<Issue> {
-    entry_text.contains("Missing or unsupported mandatory dependencies").then_some(Issue::ForgeMissingDependencies)
+pub(crate) fn forge_missing_dependencies(entry: &LogEntry) -> Option<Issue> {
+    entry.contents.contains("Missing or unsupported mandatory dependencies").then_some(Issue::ForgeMissingDependencies)
 }
 
 #[cfg(test)]
@@ -40,7 +40,8 @@ Caused by: java.lang.IllegalStateException: zip file closed
 	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1768) ~[?:?] {}
 	... 3 more
 ";
-        let issue = forge_missing_dependencies(&text).expect("Failed to determine issue");
+		let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+        let issue = entries.iter().filter_map(|e| forge_missing_dependencies(e)).next().expect("Failed to determine issue");
         assert_eq!(issue, Issue::ForgeMissingDependencies);
     }
 }

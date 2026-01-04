@@ -1,7 +1,7 @@
 use crate::issues::issue::Issue;
 
 // Input should be header beyond building_processors index
-fn lexforge_zlibng(header_text: &str) -> Option<Issue> {
+pub(crate) fn lexforge_zlibng(header_text: &str) -> Option<Issue> {
     if header_text.contains("Processor failed, invalid outputs:") {
         Some(Issue::LexforgeZlibng)
     }

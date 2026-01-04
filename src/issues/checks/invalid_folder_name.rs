@@ -1,6 +1,6 @@
 use crate::issues::issue::Issue;
 
-fn invalid_folder_name(folder: &str) -> Option<Issue> {
+pub(crate) fn invalid_folder_name(folder: &str) -> Option<Issue> {
     folder.contains('!').then_some(Issue::InvalidFolderName)
 }
 

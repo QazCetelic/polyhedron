@@ -45,7 +45,7 @@ pub enum Issue {
     #[error("Out of disk space")]
     NoDiskSpace,
     #[error("32 bit Java crash")]
-    Java32Bit,
+    Java32BitMemoryLimit,
     #[error("Wrong Intermediary Mappings version")]
     WrongIntermediaryMappingsVersion,
     #[error("Modern Java version with an old Forge version, disable certificate check")]

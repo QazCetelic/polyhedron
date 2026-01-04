@@ -1,6 +1,6 @@
 use crate::issues::issue::Issue;
 
-fn checksum_mismatch(text: &str) -> Option<Issue> {
+pub(crate) fn checksum_mismatch(text: &str) -> Option<Issue> {
     text.contains("Checksum mismatch, download is bad.").then_some(Issue::ChecksumMismatch)
 }
 

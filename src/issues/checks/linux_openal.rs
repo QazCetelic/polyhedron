@@ -1,7 +1,7 @@
-use crate::issues::issue::Issue;
+use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
-fn linux_openal(text: &str) -> Option<Issue> {
-    text.contains("# C  [libopenal.so").then_some(Issue::LinuxOpenal)
+pub(crate) fn linux_openal(entry: &LogEntry) -> Option<Issue> {
+    entry.contents.contains("# C  [libopenal.so").then_some(Issue::LinuxOpenal)
 }
 
 #[cfg(test)]
@@ -38,7 +38,8 @@ mod tests {
 #
 Process crashed with exitcode 6.
 Log upload triggered at: 30 Nov 2025 15:36:31  0200"#;
-        let issue = linux_openal(&text).expect("Failed to determine issue");
+        let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+        let issue = entries.iter().filter_map(|e| linux_openal(e)).next().expect("Failed to determine issue");
         assert_eq!(issue, Issue::LinuxOpenal);
     }
 }

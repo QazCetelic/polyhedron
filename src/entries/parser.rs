@@ -2,6 +2,7 @@ use crate::entries::{entry::LogEntry, prefix::LogPrefix};
 
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct LogEntryParser {
     prefix: Option<LogPrefix>,
     contents: String,

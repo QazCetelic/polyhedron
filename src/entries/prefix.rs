@@ -163,8 +163,22 @@ mod tests {
     #[test]
     fn test_parse_no_brackets() {
         let line = "2025-10-30T19:21:06.036061Z main WARN Advanced terminal features are not available in this environment";
-        let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix with no brackets and RFC3339 timestamp");
+        let (_prefix, _rest) = LogPrefix::parse(line).expect("Failed to parse prefix with no brackets and RFC3339 timestamp");
     }
+
+    #[test]
+    fn test_other() {
+        let line = "[21:05:17] [main/ERROR] [mixin/]: Mixin config antiqueatlas.mixins.json does not specify \"minVersion\" property";
+        let (prefix, _rest) = LogPrefix::parse(line).expect("Failed to parse prefix");
+        assert_eq!(prefix.level, "ERROR");
+    }
+
+    // #[test]
+    // fn test_other2() {
+    //     let line = "[17:23:00] [Client-Main] 24 Achievements";
+    //     let (prefix, _rest) = LogPrefix::parse(line).expect("Failed to parse prefix");
+    //     assert_eq!(prefix.level, "ERROR");
+    // }
 
     // TODO
     // #[test]

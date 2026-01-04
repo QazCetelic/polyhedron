@@ -2,10 +2,10 @@ use lazy_regex::regex;
 
 use crate::issues::issue::Issue;
 
-fn corrupted_instance(text: &str) -> Option<Issue> {
+pub(crate) fn corrupted_instance(header_text: &str) -> Option<Issue> {
     let pack_json_illegal_regex = regex!(r"mmc-pack.json.*illegal value");
 
-    pack_json_illegal_regex.is_match(text).then_some(Issue::InstanceDataCorrupted)
+    pack_json_illegal_regex.is_match(header_text).then_some(Issue::InstanceDataCorrupted)
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 use crate::issues::issue::Issue;
 
-fn invalid_proxy(text: &str) -> Option<Issue> {
+pub(crate) fn invalid_proxy(text: &str) -> Option<Issue> {
     text.contains("Connection to proxy refused").then_some(Issue::InvalidProxy)
 }
 

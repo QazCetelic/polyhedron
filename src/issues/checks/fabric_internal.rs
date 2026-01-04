@@ -2,7 +2,7 @@
 
 use crate::issues::issue::Issue;
 
-fn fabric_internal(text: &str) -> Option<Issue> {
+pub(crate) fn fabric_internal(text: &str) -> Option<Issue> {
     const CLASS_NOT_FOUND: &str = "Caused by: java.lang.ClassNotFoundException: ";
     let errors = [
 		&format!("{CLASS_NOT_FOUND}net.fabricmc.fabric.impl"),
@@ -26,9 +26,7 @@ mod tests {
 
     #[test]
     fn matches_fabric_internal() {
-        let text = "Caused by: java.lang.UnsatisfiedLinkError: org/lwjgl/opengl/LinuxDisplay
-Caused by: java.lang.ClassNotFoundException: net.fabricmc.fabric.impl
-java.lang.NoSuchMethodError: sun.security.util.ManifestEntryVerifier.<init>(Ljava/util/jar/Manifest;)V";
+        let text = "Caused by: java.lang.ClassNotFoundException: net.fabricmc.fabric.impl";
 
         let issue = fabric_internal(&text).expect("Failed to determine issue");
         assert_eq!(issue, Issue::FabricInternalAccess);

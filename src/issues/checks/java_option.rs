@@ -2,7 +2,7 @@ use lazy_regex::regex;
 
 use crate::issues::issue::Issue;
 
-fn java_option(text: &str) -> Option<Issue> {
+pub(crate) fn java_option(text: &str) -> Option<Issue> {
     let vm_option_regex = regex!(r"Unrecognized VM option '(.+)'[\r\n]");
     let unrecognized_option_regex = regex!(r"Unrecognized option: (.+)[\r\n]");
 
@@ -32,7 +32,22 @@ mod tests {
 
     #[test]
     fn vm_option_zgc() {
-        let text = "Unrecognized VM option 'UseZGC'\n";
+        let text = r#"--username  --version 1.16.1 --gameDir C:/Users/REDACTED/AppData/Roaming/PrismLauncher/instances/1.16.1/minecraft --assetsDir C:/Users/REDACTED/AppData/Roaming/PrismLauncher/assets --assetIndex 1.16 --uuid  --accessToken  --userType  --versionType release
+
+Window size: 854 x 480
+
+Launcher: standard
+
+Java Arguments:
+[-XX:+UseZGC, -XX:+AlwaysPreTouch, -Djdk.graal.TuneInlinerExploration=1, -XX:NmethodSweepActivity=1, -XX:HeapDumpPath=MojangTricksIntelDriversForPerformance_javaw.exe_minecraft.exe.heapdump, -Xms512m, -Xmx8500m, -Duser.language=en]
+
+
+Minecraft process ID: 17292
+
+
+Unrecognized VM option 'UseZGC'
+Process exited with code 1.
+"#;
         let issue = java_option(&text).expect("Failed to determine issue");
         assert_eq!(issue, Issue::JavaOption("-XX:UseZGC".to_string()));
     }

@@ -10,9 +10,17 @@ pub struct LogEntry {
 }
 
 impl LogEntry {
-    pub fn from_lines(lines: Lines) -> impl Iterator<Item = LogEntry> {
+    pub fn from_lines(lines: Lines) -> Vec<LogEntry> {
         let mut parser = LogEntryParser::new();
-        // Throws in extra line, to indirectly call finalize
-        lines.chain(vec![""]).filter_map(move |line| parser.parse_line(line))
+        let mut entries = Vec::new();
+        for line in lines {
+            if let Some(entry) = parser.parse_line(line) {
+                entries.push(entry);
+            }
+        }
+        if let Some(entry) = parser.finalize() {
+            entries.push(entry);
+        }
+        entries
     }
 }
