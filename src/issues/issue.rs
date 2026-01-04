@@ -31,4 +31,17 @@ pub enum Issue {
     /// Argument is the recommended java version (major)
     #[error("Wrong Java Version")]
     WrongJava(Option<u32>),
+    #[error("Missing forge mod dependencies")]
+    ForgeMissingDependencies,
+    #[error("Modern Java version with an old Forge version")]
+    ModernJavaOldForge,
+    /// Argument is the files that are in use
+    #[error("Locked Jars")]
+    LockedJars(Vec<String>),
+    #[error("Missing Libraries")]
+    MissingLibraries(Vec<String>),
+    #[error("Missing Indium")]
+    MissingIndium,
+    #[error("Out of disk space")]
+    NoDiskSpace,
 }

@@ -164,4 +164,11 @@ mod tests {
         let line = "2025-10-30T19:21:06.036061Z main WARN Advanced terminal features are not available in this environment";
         let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix with no brackets and RFC3339 timestamp");
     }
+
+    // TODO
+    // #[test]
+    // fn test_parse_partial_brackets() {
+    //     let line = "2024-07-11 04:30:53 [INFO] [ForgeModLoader] [AppEng] Core Init";
+    //     let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix with partial brackets");
+    // }
 }

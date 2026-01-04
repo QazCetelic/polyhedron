@@ -15,6 +15,12 @@ pub struct ModInfo {
     pub enabled: bool,
 }
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct LibraryInfo {
+    pub name: String,
+    pub missing: bool,
+}
+
 #[allow(dead_code)]
 impl<'a> IndexedLogHeader<'a> {
     pub fn get_online_mode(&self) -> Option<bool> {
@@ -108,21 +114,22 @@ impl<'a> IndexedLogHeader<'a> {
         Some(traits)
     }
 
-    fn get_libraries_section(&self, start_index: usize) -> Option<Vec<String>> {
+    fn get_libraries_section(&self, start_index: usize) -> Option<Vec<LibraryInfo>> {
         let mut lines = self.header.get(start_index..)?.lines().skip(1);
         let mut libraries = Vec::new();
         while let Some(line) = lines.next() && line.starts_with("  ") { // Libraries are indented by two spaces
-            let library_name = line.strip_prefix("  ")?.to_string();
-            libraries.push(library_name);
+            let library_line = line.strip_prefix("  ")?;
+            let (library, missing) = library_line.strip_suffix(" (missing)").map(|lib| (lib, true)).unwrap_or_else(|| (library_line, false));
+            libraries.push(LibraryInfo { name: library.to_string(), missing });
         }
         Some(libraries)
     }
 
-    pub fn get_libraries(&self) -> Option<Vec<String>> {
+    pub fn get_libraries(&self) -> Option<Vec<LibraryInfo>> {
         Self::get_libraries_section(&self, self.index.libraries?)
     }
 
-    pub fn get_native_libraries(&self) -> Option<Vec<String>> {
+    pub fn get_native_libraries(&self) -> Option<Vec<LibraryInfo>> {
         Self::get_libraries_section(&self, self.index.native_libraries?)
     }
 
@@ -204,7 +211,7 @@ impl<'a> IndexedLogHeader<'a> {
 mod tests {
     use std::collections::VecDeque;
 
-    use crate::header::index::{IndexedLogHeader};
+    use crate::header::{extract::LibraryInfo, index::IndexedLogHeader};
 
     #[test]
     fn extract_from_header_1() {
@@ -231,7 +238,7 @@ mod tests {
         let traits = index.get_traits().expect("Failed to get traits");
         assert_eq!(traits, vec!["feature:is_quick_play_multiplayer", "XR:Initial", "FirstThreadOnMacOS", "feature:is_quick_play_singleplayer"]);
         let libraries = index.get_libraries().expect("Failed to get libraries");
-        assert!(libraries.contains(&"C:/Users/********/AppData/Roaming/PrismLauncher/libraries/org/lwjgl/lwjgl-glfw/3.3.1/lwjgl-glfw-3.3.1.jar".to_string()));
+        assert!(libraries.iter().any(|l| l.name == "C:/Users/********/AppData/Roaming/PrismLauncher/libraries/org/lwjgl/lwjgl-glfw/3.3.1/lwjgl-glfw-3.3.1.jar"));
         let mods = index.get_mods().expect("Failed to get mods");
         assert!(mods.iter().any(|m| m.name == "Patchouli-1.20.1-84.1-FORGE" && m.enabled));
         let params_str = index.get_params().expect("Failed to get params");
@@ -282,7 +289,7 @@ mod tests {
         let traits = index.get_traits().expect("Failed to get traits");
         assert_eq!(traits, vec!["feature:is_quick_play_multiplayer", "XR:Initial", "feature:is_quick_play_singleplayer", "FirstThreadOnMacOS"]);
         let libraries = index.get_libraries().expect("Failed to get libraries");
-        assert!(libraries.contains(&"/var/home/RIX/.local/share/PrismLauncher/libraries/org/lwjgl/lwjgl-glfw/3.3.1/lwjgl-glfw-3.3.1.jar".to_string()));
+        assert!(libraries.iter().any(|l| l.name == "/var/home/RIX/.local/share/PrismLauncher/libraries/org/lwjgl/lwjgl-glfw/3.3.1/lwjgl-glfw-3.3.1.jar"));
         let mods = index.get_mods().expect("Failed to get mods");
         assert!(mods.iter().any(|m| m.name == "Botania-1.20.1-448-FABRIC" && m.enabled));
         let params_str = index.get_params().expect("Failed to get params");
@@ -302,5 +309,18 @@ mod tests {
         assert_eq!(current_time_str, None);
         let created_tmp_dir_str = index.get_created_tmp_dir();
         assert_eq!(created_tmp_dir_str, None);
+    }
+
+    #[test]
+    fn extract_from_header_3() {
+        let string = include_str!("test_data/header_3.log");
+        let index = IndexedLogHeader::index_header(string);
+        let libraries = index.get_libraries().expect("Failed to get libraries");
+        let missing_libs: Vec<&String> = libraries.iter().filter_map(|lib| lib.missing.then_some(&lib.name)).collect();
+        assert_eq!(missing_libs, vec![
+            "C:/Users/REDACTED/AppData/Roaming/PrismLauncher/libraries/io/github/zekerzhayard/ForgeWrapper/prism-2025-12-07/ForgeWrapper-prism-2025-12-07.jar",
+            "C:/Users/REDACTED/AppData/Roaming/PrismLauncher/libraries/net/minecraftforge/fmlloader/1.20.1-47.4.10/fmlloader-1.20.1-47.4.10.jar",
+            "C:/Users/REDACTED/AppData/Roaming/PrismLauncher/libraries/net/minecraftforge/fmlearlydisplay/1.20.1-47.4.10/fmlearlydisplay-1.20.1-47.4.10.jar"
+        ]);
     }
 }
