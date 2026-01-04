@@ -52,14 +52,8 @@ impl LogPrefixTime {
     fn parse_rfc_3339(time_str: &str) -> Option<Self> {
         // e.g. "2025-10-30T19:21:06.036061Z"
         let (date_str, time_str) = time_str.strip_suffix('Z')?.split_once('T')?;
-        let year: u16 = date_str.get(0..4)?.parse().ok()?;
-        let month: u8 = date_str.get(5..7)?.parse().ok()?;
-        let day: u8 = date_str.get(8..10)?.parse().ok()?;
-        let date = LogPrefixDate { day, month, year };
-        let hour: u8 = time_str.get(0..2)?.parse().ok()?;
-        let minute: u8 = time_str.get(3..5)?.parse().ok()?;
-        let second: u8 = time_str.get(6..8)?.parse().ok()?;
-        let millisecond: u16 = time_str.get(9..12)?.parse().ok()?;
+        let date = parse_iso_date(date_str)?;
+        let (hour, minute, second, millisecond) = parse_iso_time(time_str)?;
         Some(LogPrefixTime {
             date: Some(date),
             hour,
@@ -68,6 +62,59 @@ impl LogPrefixTime {
             millisecond: Some(millisecond),
         })
     }
+}
+
+// "19:21:06.036061" -> {19, 21, 6, 36}
+fn parse_iso_time(time: &str) -> Option<(u8, u8, u8, u16)> {
+    let hour: u8 = time.get(0..2)?.parse().ok()?;
+    if time.get(2..3)? != ":" { return None; }
+    let minute: u8 = time.get(3..5)?.parse().ok()?;
+    if time.get(5..6)? != ":" { return None; }
+    let second: u8 = time.get(6..8)?.parse().ok()?;
+    if time.get(8..9)? != "." { return None; }
+    let millisecond: u16 = time.get(9..12)?.parse().ok()?;
+    Some((hour, minute, second, millisecond))
+}
+
+// "2025-10-30" -> {2025, 10, 30}
+fn parse_iso_date(date: &str) -> Option<LogPrefixDate> {
+    let year: u16 = date.get(0..4)?.parse().ok()?;
+    if date.get(4..5)? != "-" { return None; }
+    let month: u8 = date.get(5..7)?.parse().ok()?;
+    if date.get(7..8)? != "-" { return None; }
+    let day: u8 = date.get(8..10)?.parse().ok()?;
+    Some(LogPrefixDate { day, month, year })
+}
+
+// "02/12/2025" -> {2025, 12, 2}
+fn parse_eu_date(date: &str) -> Option<LogPrefixDate> {
+    let (day_str, month_and_year) = date.split_once('/')?;
+    let (month_str, year_str) = month_and_year.split_once('/')?;
+    let day: u8 = day_str.parse().ok()?;
+    let month: u8 = month_str.parse().ok()?;
+    let year: u16 = year_str.parse().ok()?;
+    Some(LogPrefixDate { day, month, year })
+}
+
+// "04Dec2025" -> {2025, 12, 04}
+fn parse_named_month_date(date: &str) -> Option<LogPrefixDate> {
+    // e.g. "04Dec2025", "16Sept2025"
+    let day: u8 = date.get(0..2)?.parse().ok()?;
+    let date_and_month_str = date.get(2..)?;
+    let mut iter = date_and_month_str.chars().peekable();
+    let mut month_name = String::new();
+    let mut year: u16 = 0;
+    while let Some(c) = iter.peek() && c.is_alphabetic()
+    {
+        // Collect "Dec" or "Sept"
+        month_name.push(*c);
+        iter.next();
+    }
+    while let Some(c) = iter.next() {
+        year = year * 10 + (c.to_digit(10)? as u16);
+    }
+    let month: u8 = month_str_to_number(&month_name)?;
+    Some(LogPrefixDate { day, month, year })
 }
 
 /// Strips " AM" or " PM" suffix from the time string and indicates if it was PM.
@@ -88,31 +135,14 @@ impl LogPrefixDate {
             // "12Sept2025 00:41:16.572"
             return None;
         }
-        if let Some((day_str, rest)) = date_str.split_once('/') {
-            // e.g. "02/12/2025"
-            let (month_str, year_str) = rest.split_once('/')?;
-            let day: u8 = day_str.parse().ok()?;
-            let month: u8 = month_str.parse().ok()?;
-            let year: u16 = year_str.parse().ok()?;
-            Some(LogPrefixDate { day, month, year })
-        } else if date_str.len() >= 9 {
-            // e.g. "04Dec2025", "16Sept2025"
-            let day: u8 = date_str.get(0..2)?.parse().ok()?;
-            let date_and_month_str = date_str.get(2..)?;
-            let mut iter = date_and_month_str.chars().peekable();
-            let mut month_name = String::new();
-            let mut year: u16 = 0;
-            while let Some(c) = iter.peek() && c.is_alphabetic()
-            {
-                // Collect "Dec" or "Sept"
-                month_name.push(*c);
-                iter.next();
-            }
-            while let Some(c) = iter.next() {
-                year = year * 10 + (c.to_digit(10)? as u16);
-            }
-            let month: u8 = month_str_to_number(&month_name)?;
-            Some(LogPrefixDate { day, month, year })
+        else if let Some(date) = parse_iso_date(date_str) {
+            Some(date)
+        }
+        else if let Some(date) = parse_eu_date(date_str) {
+            Some(date)
+        }
+        else if date_str.len() >= 9 {
+            Some(parse_named_month_date(date_str)?)
         } else {
             None
         }
@@ -218,6 +248,7 @@ mod tests {
             "08:01:29.968",
             "08:33:03.106",
             "08:33:03.471",
+            "2024-07-11 04:30:53",
         ];
         for time_str in examples {
             let _time = LogPrefixTime::parse(time_str).expect(&format!("Failed to parse time: {}", time_str));
