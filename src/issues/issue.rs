@@ -33,8 +33,8 @@ pub enum Issue {
     WrongJava(Option<u32>),
     #[error("Missing forge mod dependencies")]
     ForgeMissingDependencies,
-    #[error("Modern Java version with an old Forge version")]
-    ModernJavaOldForge,
+    #[error("Modern Java version with an old Forge version, install LegacyJavaFixer")]
+    NewJavaOldForgeLegacyJavaFixer,
     /// Argument is the files that are in use
     #[error("Locked Jars")]
     LockedJars(Vec<String>),
@@ -44,4 +44,22 @@ pub enum Issue {
     MissingIndium,
     #[error("Out of disk space")]
     NoDiskSpace,
+    #[error("32 bit Java crash")]
+    Java32Bit,
+    #[error("Wrong Intermediary Mappings version")]
+    WrongIntermediaryMappingsVersion,
+    #[error("Modern Java version with an old Forge version, disable certificate check")]
+    NewJavaOldForgeIgnoreCerts,
+    #[error("Outdated cached files")]
+    ChecksumMismatch,
+    #[error("Nvidia drivers on Linux")]
+    NvidiaLinux, // Note: Refraction recommends setting `__GL_THREADED_OPTIMIZATIONS` to `0`, but the most common solution on Discord is disabling zink 
+    #[error("Missing .alsoftrc")]
+    LinuxOpenal,
+    #[error("Failed to connect to X11")] // Note: Often a problem with Flatpak
+    X11ConnectFailure,
+    #[error("Old Java on MacOS")]
+    OldJavaMacOs,
+    #[error("xrandr missing on Minecraft versions that use LWJGL 2")]
+    MissingXrandr,
 }
