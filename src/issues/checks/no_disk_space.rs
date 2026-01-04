@@ -1,4 +1,4 @@
-use crate::{header::extract::LibraryInfo, issues::issue::Issue};
+use crate::issues::issue::Issue;
 
 fn no_disk_space(entry_text: &str) -> Option<Issue> {
     entry_text.contains("There is not enough space on the disk").then_some(Issue::NoDiskSpace)
@@ -6,8 +6,6 @@ fn no_disk_space(entry_text: &str) -> Option<Issue> {
 
 #[cfg(test)]
 mod tests {
-    use crate::header::index::IndexedLogHeader;
-
     use super::*;
 
     #[test]

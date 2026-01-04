@@ -157,6 +157,7 @@ mod tests {
         let line = "[m[32m[21:03:47.697] [main/INFO] [EARLYDISPLAY/]: Trying GL version 4.6";
         let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix with ANSI escape codes");
         assert_eq!(prefix.time.hour, 21);
+        assert_eq!(rest, "Trying GL version 4.6")
     }
 
     #[test]

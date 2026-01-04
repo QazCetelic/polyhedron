@@ -209,9 +209,7 @@ impl<'a> IndexedLogHeader<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::VecDeque;
-
-    use crate::header::{extract::LibraryInfo, index::IndexedLogHeader};
+    use crate::header::index::IndexedLogHeader;
 
     #[test]
     fn extract_from_header_1() {

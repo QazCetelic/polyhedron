@@ -8,6 +8,7 @@ pub struct StacktraceParser {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct StacktraceLine {
     class: String,
     method: String,
@@ -16,6 +17,7 @@ pub struct StacktraceLine {
 }
 
 impl StacktraceLine {
+    #[allow(dead_code)]
     pub fn get_jar(&self) -> Option<String> {
         // "~[lwjgl-2.9.4-nightly-20150209.jar:?]"
         let without_brackets = self.rest.strip_suffix(']')?.trim_start_matches('~').strip_prefix('[')?;
@@ -31,12 +33,14 @@ impl StacktraceLine {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Stacktrace {
     pub exception: Option<String>,
     pub message: Option<String>,
     lines: Vec<StacktraceLine>,
 }
 
+#[allow(dead_code)]
 impl Stacktrace {
     pub fn from_lines(lines: Lines) -> impl Iterator<Item = Stacktrace> {
         let mut parser = StacktraceParser::new();
@@ -45,6 +49,7 @@ impl Stacktrace {
     }
 }
 
+#[allow(dead_code)]
 impl StacktraceParser {
     pub fn new() -> Self {
         StacktraceParser { 

@@ -1,4 +1,4 @@
-use crate::{issues::issue::Issue, parse::stacktrace::Stacktrace};
+use crate::issues::issue::Issue;
 
 fn flatpak_nvidia(text: &str) -> Option<Issue> {
     if text.contains("org.lwjgl.LWJGLException: Could not choose GLX13 config") || text.contains("GLX: Failed to find a suitable GLXFBConfig") {
