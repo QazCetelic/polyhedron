@@ -1,4 +1,4 @@
-use crate::{entries::entry::LogEntry, issues::issue::Issue};
+use crate::issues::issue::Issue;
 
 fn checksum_mismatch(text: &str) -> Option<Issue> {
     text.contains("Checksum mismatch, download is bad.").then_some(Issue::ChecksumMismatch)
@@ -6,8 +6,6 @@ fn checksum_mismatch(text: &str) -> Option<Issue> {
 
 #[cfg(test)]
 mod tests {
-    use crate::entries::entry::LogEntry;
-
     use super::*;
 
     #[test]

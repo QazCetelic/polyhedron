@@ -25,3 +25,6 @@ pub mod linux_openal;
 pub mod x11_connect_failure;
 pub mod old_java_macos;
 pub mod missing_xrandr;
+pub mod invalid_folder_name;
+pub mod corrupted_instance;
+pub mod invalid_proxy;

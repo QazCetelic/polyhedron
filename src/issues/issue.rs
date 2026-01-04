@@ -62,4 +62,10 @@ pub enum Issue {
     OldJavaMacOs,
     #[error("xrandr missing on Minecraft versions that use LWJGL 2")]
     MissingXrandr,
+    #[error("Invalid folder name")]
+    InvalidFolderName,
+    #[error("Corrupted instance files")]
+    InstanceDataCorrupted,
+    #[error("Invalid proxy configuration")]
+    InvalidProxy,
 }
