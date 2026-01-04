@@ -34,6 +34,21 @@ fn basic_strip_ansi_escape(mut line: &str) -> &str {
     line
 }
 
+// "2025-10-30T19:21:06.036061Z main WARN Advanced terminal features are not available in this environment"
+fn parse_iso_no_brackets(line: &str) -> Option<(LogPrefix, &str)> {
+    let (time_str, rest) = line.split_once(' ')?;
+    let time = LogPrefixTime::parse(time_str)?; // "2025-10-30T19:21:06.036061Z"
+    let (thread_str, rest) = rest.split_once(' ')?;
+    let (level_str, rest) = rest.split_once(' ')?;
+    let prefix = LogPrefix {
+        time,
+        thread: thread_str.to_string(),
+        level: level_str.to_string(),
+        context: None,
+    };
+    Some((prefix, rest))
+}
+
 impl LogPrefix {
     /// Parses a log line prefix and returns the LogPrefix and the rest of the line if successful.
     pub fn parse(line: &str) -> Option<(LogPrefix, &str)> {
@@ -63,19 +78,8 @@ impl LogPrefix {
             };
             Some((prefix, rest_of_line))
         }
-        // "2025-10-30T19:21:06.036061Z main WARN Advanced terminal features are not available in this environment"
         else {
-            let (time_str, rest) = stripped.split_once(' ')?;
-            let time = LogPrefixTime::parse(time_str)?; // "2025-10-30T19:21:06.036061Z"
-            let (thread_str, rest) = rest.split_once(' ')?;
-            let (level_str, rest) = rest.split_once(' ')?;
-            let prefix = LogPrefix {
-                time,
-                thread: thread_str.to_string(),
-                level: level_str.to_string(),
-                context: None,
-            };
-            Some((prefix, rest))
+            parse_iso_no_brackets(stripped)
         }
     }
 }
@@ -85,7 +89,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_prefix() {
+    fn basic() {
         let line = "[16:20:50] [Client thread/INFO]: LWJGL Version: 2.9.4";
         let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix");
         assert_eq!(prefix.time.hour, 16);
@@ -97,7 +101,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_with_context() {
+    fn with_milliseconds() {
         let line = "[17:26:36.877] [main/INFO] [loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file...";
         let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix");
         assert_eq!(prefix.time.hour, 17);
@@ -120,7 +124,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_nested_brackets() {
+    fn nested_brackets() {
         let line = "[21:08:14] [DH-Cleanup Thread[0]/INFO] [Di.se.di.co.re.LodQuadTree/]: waiting for [0] futures before closing render cache...";
         let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix with nested brackets");
         assert_eq!(prefix.time.hour, 21);
@@ -133,7 +137,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_no_thread() {
+    fn no_thread() {
         let line = "[17:26:37] [WARN] [FabricLoader/Metadata]: The mod \"betterstats\" contains invalid entries in its mod json:";
         let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix with no thread");
         assert_eq!(prefix.time.hour, 17);
@@ -146,14 +150,7 @@ mod tests {
     }
 
     #[test]
-    fn test_strip_ansi() {
-        let line = "[m[32m[21:03:47.697] [main/INFO] [EARLYDISPLAY/]: Trying GL version 4.6";
-        let stripped_line = basic_strip_ansi_escape(line);
-        assert_eq!(stripped_line, "[21:03:47.697] [main/INFO] [EARLYDISPLAY/]: Trying GL version 4.6");
-    }
-
-    #[test]
-    fn test_parse_ansi() {
+    fn ansi() {
         let line = "[m[32m[21:03:47.697] [main/INFO] [EARLYDISPLAY/]: Trying GL version 4.6";
         let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix with ANSI escape codes");
         assert_eq!(prefix.time.hour, 21);
@@ -161,16 +158,9 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_no_brackets() {
+    fn iso_no_brackets() {
         let line = "2025-10-30T19:21:06.036061Z main WARN Advanced terminal features are not available in this environment";
         let (_prefix, _rest) = LogPrefix::parse(line).expect("Failed to parse prefix with no brackets and RFC3339 timestamp");
-    }
-
-    #[test]
-    fn test_other() {
-        let line = "[21:05:17] [main/ERROR] [mixin/]: Mixin config antiqueatlas.mixins.json does not specify \"minVersion\" property";
-        let (prefix, _rest) = LogPrefix::parse(line).expect("Failed to parse prefix");
-        assert_eq!(prefix.level, "ERROR");
     }
 
     // #[test]
