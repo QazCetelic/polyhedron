@@ -28,17 +28,7 @@ impl LogPrefixTime {
         else {
             (None, without_suffix)
         };
-        let (hms_part, millisecond) = if let Some((hms_str, ms_str)) = time_part.split_once('.') {
-            (hms_str, Some(ms_str.parse::<u16>().ok()?))
-        }
-        else {
-            (time_part, None)
-        };
-        let (hour_str, minute_and_second) = hms_part.split_once(':')?;
-        let (minute_str, second_str) = minute_and_second.split_once(':')?;
-        let hour: u8 = hour_str.parse().ok()?;
-        let minute: u8 = minute_str.parse().ok()?;
-        let second: u8 = second_str.parse().ok()?;
+        let (hour, minute, second, millisecond) = parse_time(time_part)?;
         let time = LogPrefixTime {
             date,
             hour,
@@ -62,6 +52,22 @@ impl LogPrefixTime {
             millisecond: Some(millisecond),
         })
     }
+}
+
+// "17:45:36.659"
+fn parse_time(time: &str) -> Option<(u8, u8, u8, Option<u16>)> {
+    let (hms_part, millisecond) = if let Some((hms_str, ms_str)) = time.split_once('.') {
+        (hms_str, Some(ms_str.parse::<u16>().ok()?))
+    }
+    else {
+        (time, None)
+    };
+    let (hour_str, minute_and_second) = hms_part.split_once(':')?;
+    let (minute_str, second_str) = minute_and_second.split_once(':')?;
+    let hour: u8 = hour_str.parse().ok()?;
+    let minute: u8 = minute_str.parse().ok()?;
+    let second: u8 = second_str.parse().ok()?;
+    Some((hour, minute, second, millisecond))
 }
 
 // "19:21:06.036061" -> {19, 21, 6, 36}
@@ -98,6 +104,10 @@ fn parse_eu_date(date: &str) -> Option<LogPrefixDate> {
 
 // "04Dec2025" -> {2025, 12, 04}
 fn parse_named_month_date(date: &str) -> Option<LogPrefixDate> {
+    if date.len() < 9 {
+        return None;
+    }
+
     // e.g. "04Dec2025", "16Sept2025"
     let day: u8 = date.get(0..2)?.parse().ok()?;
     let date_and_month_str = date.get(2..)?;
@@ -141,9 +151,10 @@ impl LogPrefixDate {
         else if let Some(date) = parse_eu_date(date_str) {
             Some(date)
         }
-        else if date_str.len() >= 9 {
-            Some(parse_named_month_date(date_str)?)
-        } else {
+        else if let Some(date) = parse_named_month_date(date_str) {
+            Some(date)
+        }
+        else {
             None
         }
     }
