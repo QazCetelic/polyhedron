@@ -1,6 +1,6 @@
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-enum LauncherVariant {
+pub enum LauncherVariant {
     PrismLauncher,
     MultiMC,
     Other(String), // Other MultiMC / Prism forks

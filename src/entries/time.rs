@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug)]
 pub struct LogPrefixDate {
@@ -53,6 +55,20 @@ impl LogPrefixTime {
         })
     }
 }
+
+impl Display for LogPrefixTime {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(date) = &self.date {
+            write!(f, "{:04}-{:02}-{:02} ", date.year, date.month, date.day)?;
+        }
+        write!(f, "{:02}:{:02}:{:02}", self.hour, self.minute, self.second)?;
+        if let Some(ms) = &self.millisecond {
+            write!(f, ".{:03}", ms)?;
+        }
+
+        Ok(())
+    }
+} 
 
 // "17:45:36.659"
 fn parse_time(time: &str) -> Option<(u8, u8, u8, Option<u16>)> {
