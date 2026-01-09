@@ -39,7 +39,7 @@ const CHECKS_FULL_TEXT: [for<'a> fn(&str) -> Option<super::issue::Issue>; 3] = [
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 7] = [
+pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 8] = [
     optifine::optifine_header,
     corrupted_instance::corrupted_instance,
     invalid_folder_name::invalid_folder_name_header,
@@ -47,6 +47,7 @@ pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 7]
     wrong_java::wrong_java_header,
     locked_jar::locked_jar_header,
     java_option::java_option,
+    missing_libraries::missing_libraries_header,
 ];
 
 #[allow(dead_code)]

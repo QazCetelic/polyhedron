@@ -1,4 +1,4 @@
-use crate::{header::extract::LibraryInfo, issues::issue::Issue};
+use crate::{header::{extract::LibraryInfo, index::IndexedLogHeader}, issues::issue::Issue};
 
 fn missing_libraries(libraries: &[LibraryInfo]) -> Option<Issue> {
     let missing_libs: Vec<String> = libraries.iter()
@@ -6,6 +6,17 @@ fn missing_libraries(libraries: &[LibraryInfo]) -> Option<Issue> {
         .map(|lib| lib.name.to_string())
         .collect();
     (!missing_libs.is_empty()).then_some(Issue::MissingLibraries(missing_libs))
+}
+
+pub(crate) fn missing_libraries_header(header: &IndexedLogHeader<'_>) -> Option<Issue> {
+    let mut all_libs = Vec::new();
+    if let Some(mut libs) = header.get_libraries() {
+        all_libs.append(&mut libs);
+    }
+    if let Some(mut native_libs) = header.get_native_libraries() {
+        all_libs.append(&mut native_libs);
+    }
+    missing_libraries(&all_libs)
 }
 
 #[cfg(test)]
@@ -119,10 +130,7 @@ Native libraries:
 Mods:
 ";
         let indexed = IndexedLogHeader::index_header(header_fragment);
-        let mut all_libs = Vec::new();
-        all_libs.append(&mut indexed.get_libraries().expect("Failed to get libraries"));
-        all_libs.append(&mut indexed.get_native_libraries().expect("Failed to get native libraries"));
-        let issue = missing_libraries(&all_libs).expect("Failed to determine issue");
+        let issue = missing_libraries_header(&indexed).expect("Failed to determine issue");
         let Issue::MissingLibraries(libs) = issue else { panic!("Not MissingLibraries issue"); };
         assert_eq!(libs, vec![
             "C:/Users/Ultra/AppData/Roaming/PrismLauncher/libraries/io/github/zekerzhayard/ForgeWrapper/prism-2025-12-07/ForgeWrapper-prism-2025-12-07.jar",
