@@ -66,21 +66,31 @@ fn valid_java_identifier(identifier: &str) -> bool {
     return true;
 }
 
-// "OpenGL debug message: java.lang.Throwable: id=0, source=SHADER…" -> {"java.lang.Throwable", "id=0, source=SHADER…"}
-fn parse_exception<'a>(line: &'a str) -> Option<(&'a str, &'a str)> {
-    let (exception, msg) = line.split_once(": ")?;
-    let classname_parts = exception.split('.');
+// "java.lang.Throwable" -> true
+pub(crate) fn is_valid_classname(classname: &str) -> bool {
+    let classname_parts = classname.split('.');
     let mut part_cnt = 0_usize;
     for part in classname_parts {
         part_cnt += 1;
         if !valid_java_identifier(part) {
-            return parse_exception(msg);
+            return false;
         }
     }
     if part_cnt < 2 {
-        return None;
+        return false;
     }
-    Some((exception, msg))
+    return true;
+}
+
+// "OpenGL debug message: java.lang.Throwable: id=0, source=SHADER…" -> {"java.lang.Throwable", "id=0, source=SHADER…"}
+fn parse_exception<'a>(line: &'a str) -> Option<(&'a str, &'a str)> {
+    let (exception, msg) = line.split_once(": ")?;
+    if is_valid_classname(exception) {
+        Some((exception, msg))
+    }
+    else {
+        parse_exception(msg)
+    }
 }
 
 #[allow(dead_code)]

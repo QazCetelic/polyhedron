@@ -8,7 +8,6 @@ pub(crate) fn java_option(header: &IndexedLogHeader<'_>) -> Option<Issue> {
 
     if let Some(captures) = vm_option_regex.captures(header.text) {
         let arg = format!("-XX:{}", &captures[1]);
-        dbg!(&arg);
         return Some(Issue::JavaOption(arg));
 	}
 	else if let Some(captures) = unrecognized_option_regex.captures(header.text) {

@@ -1,4 +1,4 @@
-use crate::entries::time::LogPrefixTime;
+use crate::{entries::time::LogPrefixTime, parse::stacktrace::is_valid_classname};
 
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -56,10 +56,12 @@ fn parse_with_brackets(line: &str) -> Option<(LogPrefix, &str)> {
     let (time_str, rest) = line.split_once("] [")?;
     let time = LogPrefixTime::parse(time_str)?; // "16:20:50"
     let (thread_level_context_str, rest_of_line) = rest.split_once("]: ")?;
-    let (thread_level_str, context_str_opt) = if let Some((before, after)) = thread_level_context_str.rsplit_once("] [") {
-        (before, Some(after))
+    let (thread_level_str, context_str_opt, msg) = if let Some((before, after)) = thread_level_context_str.rsplit_once("] [") {
+        (before, Some(after), rest_of_line)
+    } else if let Some((context, rest_of_line)) = rest_of_line.strip_prefix('[').map(|l| l.split_once("]: ")).flatten() && is_valid_classname(context) {
+        (thread_level_context_str, Some(context), rest_of_line)
     } else {
-        (thread_level_context_str, None)
+        (thread_level_context_str, None, rest_of_line)
     };
     let (thread_str, level_str) = if let Some((thread, level)) = thread_level_str.split_once('/') {
         (thread, level)
@@ -72,7 +74,7 @@ fn parse_with_brackets(line: &str) -> Option<(LogPrefix, &str)> {
         level: level_str.to_string(),
         context: context_str_opt.map(|s| s.to_string()),
     };
-    Some((prefix, rest_of_line))
+    Some((prefix, msg))
 }
 
 // "2025-12-13 11:59:21 [INFO] [MiscPeripheralsASM] Initialized"
@@ -242,5 +244,15 @@ mod tests {
         assert_eq!(format!("{}", prefix.time), "00:00:00.001");
         assert_eq!(prefix.level, "D");
         assert_eq!(rest, r#"Testing "/usr/share/PrismLauncher/qtlogging.ini" ..."#);
+    }
+
+    #[test]
+    fn test_other_context_format() {
+        let line = "[19:42:48] [Render thread/INFO]: [me.cx.vy.cn.cg.Serialization]: Registered Config as Redis for config type StorageConfig";
+        let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix with other context format");
+        assert_eq!(format!("{}", prefix.time), "19:42:48");
+        assert_eq!(prefix.level, "INFO");
+        assert_eq!(prefix.context, Some("me.cx.vy.cn.cg.Serialization".to_string()));
+        assert_eq!(rest, r#"Registered Config as Redis for config type StorageConfig"#);
     }
 }
