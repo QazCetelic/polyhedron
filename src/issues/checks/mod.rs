@@ -1,4 +1,4 @@
-use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader, issues::{checks::intel_hd::{intel_hd_entry}, issue::Issue}};
+use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader, issues::{checks::{shader_compile_error::shader_compile_error, intel_hd::intel_hd_entry}, issue::Issue}};
 
 pub mod flatpak_nvidia;
 pub mod fabric_internal;
@@ -30,6 +30,7 @@ pub mod missing_xrandr;
 pub mod invalid_folder_name;
 pub mod corrupted_instance;
 pub mod invalid_proxy;
+pub mod shader_compile_error;
 
 #[allow(dead_code)]
 const CHECKS_FULL_TEXT: [for<'a> fn(&str) -> Option<super::issue::Issue>; 3] = [
@@ -51,7 +52,7 @@ pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 8]
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&LogEntry) -> Option<Issue>>; 19] = [
+pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&LogEntry) -> Option<Issue>>; 20] = [
     |header| {
         let java_version = header.get_java_version();
         Box::new(move |entry| intel_hd_entry(entry, java_version.as_ref()))
@@ -109,5 +110,8 @@ pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&
     },
     |_header| { 
         Box::new(|entry| new_java_old_forge::new_java_old_forge_ignore_certificates(entry)) 
+    },
+    |_header| { 
+        Box::new(|entry| shader_compile_error::shader_compile_error(entry)) 
     },
 ];

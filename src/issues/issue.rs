@@ -68,4 +68,6 @@ pub enum Issue {
     InstanceDataCorrupted,
     #[error("Invalid proxy configuration")]
     InvalidProxy,
+    #[error("Failed to compile GLSL shader")]
+    ShaderCompileError,
 }
