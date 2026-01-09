@@ -1,4 +1,4 @@
-use crate::issues::issue::Issue;
+use crate::{header::index::IndexedLogHeader, issues::issue::Issue};
 
 // Input should be header beyond building_processors index
 pub(crate) fn lexforge_zlibng(header_text: &str) -> Option<Issue> {
@@ -8,6 +8,10 @@ pub(crate) fn lexforge_zlibng(header_text: &str) -> Option<Issue> {
     else {
         None
     }
+}
+
+pub(crate) fn lexforge_zlibng_header(header: &IndexedLogHeader<'_>) -> Option<Issue> {
+    lexforge_zlibng(header.text)
 }
 
 #[cfg(test)]

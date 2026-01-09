@@ -2,7 +2,7 @@ use std::io::{BufRead, ErrorKind};
 
 use thiserror::Error;
 
-use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}};
+use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_ENTRIES, CHECKS_HEADER}, issue::Issue}};
 
 mod entries;
 mod header;
@@ -23,7 +23,8 @@ pub struct ReadLog {
     pub header: String,
     pub header_info: LogHeaderInfo,
     pub header_index: LogHeaderIndex,
-    pub entries: Vec<LogEntry>
+    pub entries: Vec<LogEntry>,
+    pub issues: Vec<Issue>
 }
 
 pub fn read_log<R: BufRead>(mut reader: R) -> Result<ReadLog, ReadLogError> {
@@ -61,11 +62,36 @@ pub fn read_log<R: BufRead>(mut reader: R) -> Result<ReadLog, ReadLogError> {
         entries.push(entry);
     }
 
+    let indexed_header = IndexedLogHeader::from_index(index.clone(), &header_buffer);
+    let issues = find_issues(&indexed_header, &entries);
+
     Ok(ReadLog {
         launcher_info,
         header: header_buffer,
         header_info: header_info,
         header_index: index,
-        entries
+        entries,
+        issues
     })
+}
+
+fn find_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry]) -> Vec<Issue> {
+    let mut issues = Vec::new();
+    
+    for header_check in CHECKS_HEADER {
+        if let Some(issue) = header_check(header) {
+            issues.push(issue);
+        }
+    }
+
+    for build_entry_check in CHECKS_ENTRIES {
+        let entry_check = build_entry_check(header);
+        for entry in entries {
+            if let Some(issue) = entry_check(entry) {
+                issues.push(issue);
+            }
+        }
+    }
+
+    issues
 }

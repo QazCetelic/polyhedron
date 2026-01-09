@@ -1,6 +1,10 @@
-use crate::issues::issue::Issue;
+use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
-fn lwjgl_2_java_9(text: &str) -> Option<Issue> {
+pub(crate) fn lwjgl_2_java_9_entry(entry: &LogEntry) -> Option<Issue> {
+    lwjgl_2_java_9_text(&entry.contents)
+}
+
+fn lwjgl_2_java_9_text(text: &str) -> Option<Issue> {
     text.contains("check_match: Assertion `version->filename == NULL || ! _dl_name_match_p (version->filename, map)' failed!").then_some(Issue::Lwjgl2JavaAbove8)
 }
 
@@ -27,7 +31,8 @@ Forward
 More
 [14:01]Friday 27 September 2024 at 14:01
 ";
-        let issue = lwjgl_2_java_9(&text).expect("Failed to determine issue");
+        let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+		let issue = entries.iter().filter_map(|e| lwjgl_2_java_9_entry(e)).next().expect("Failed to determine issue");
         assert_eq!(issue, Issue::Lwjgl2JavaAbove8);
     }
 }

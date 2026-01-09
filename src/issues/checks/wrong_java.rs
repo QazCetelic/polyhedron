@@ -1,6 +1,6 @@
 use lazy_regex::regex;
 
-use crate::issues::issue::Issue;
+use crate::{header::index::IndexedLogHeader, issues::issue::Issue};
 
 pub(crate) fn wrong_java(text: &str) -> Option<Issue> {
     let switch_version_regex = regex!(r"Please switch to one of the following Java versions for this instance:[\r\n]+(Java version [\d.]+)");
@@ -15,6 +15,10 @@ pub(crate) fn wrong_java(text: &str) -> Option<Issue> {
     else {
         None
     }
+}
+
+pub (crate) fn wrong_java_header(header: &IndexedLogHeader<'_>) -> Option<Issue> {
+    wrong_java(header.text)
 }
 
 #[cfg(test)]

@@ -91,6 +91,49 @@ fn parse_partial_brackets(line: &str) -> Option<(LogPrefix, &str)> {
     Some((prefix, rest))
 }
 
+// Seemingly quite rare
+// "[17:23:00] [Client-Main] 24 Achievements"
+fn parse_no_level(line: &str) -> Option<(LogPrefix, &str)> {
+    let (time_str, rest) = line.strip_prefix('[')?.split_once("] [")?;
+    let time = LogPrefixTime::parse(time_str)?;
+    let (thread, rest) = rest.split_once("] ")?;
+     let prefix = LogPrefix {
+        time,
+        thread: thread.to_string(),
+        level: "".to_string(), // Not using None
+        context: None,
+    };
+    Some((prefix, rest))
+}
+
+// "     0.001 D | Testing "/usr/share/PrismLauncher/qtlogging.ini" ..."
+// "41.793 D | World Name: "New World""
+fn parse_qtlogging(line: &str) -> Option<(LogPrefix, &str)> {
+    let line = line.trim_ascii_start();
+    let (sec_str, rest) = line.split_once('.')?;
+    let sec: usize = sec_str.parse().ok()?;
+    let (ms_str, rest) = rest.split_once(' ')?;
+    let ms: u16 = ms_str.parse().ok()?;
+    let (level, rest) = rest.split_once(" | ")?;
+    let second: u8 = (sec % 60).try_into().ok()?;
+    let minute: u8 = (sec / 60 % 60).try_into().ok()?;
+    let hour: u8 = (sec / 60 / 60).try_into().ok()?;
+    let time = LogPrefixTime {
+        date: None,
+        hour,
+        minute,
+        second,
+        millisecond: Some(ms),
+    };
+    let prefix = LogPrefix { 
+        time,
+        thread: "".to_string(),
+        level: level.to_string(),
+        context: None,
+    };
+    Some((prefix, rest))
+}
+
 impl LogPrefix {
     /// Parses a log line prefix and returns the LogPrefix and the rest of the line if successful.
     pub fn parse(line: &str) -> Option<(LogPrefix, &str)> {
@@ -99,6 +142,8 @@ impl LogPrefix {
         parse_with_brackets(stripped)
             .or_else(|| parse_iso_no_brackets(stripped))
             .or_else(|| parse_partial_brackets(stripped))
+            .or_else(|| parse_no_level(stripped))
+            .or_else(|| parse_qtlogging(stripped))
     }
 }
 
@@ -171,12 +216,14 @@ mod tests {
         assert_eq!(format!("{}", prefix.time), "2025-10-30 19:21:06.036");
     }
 
-    // #[test]
-    // fn test_without_level() {
-    //     let line = "[17:23:00] [Client-Main] 24 Achievements";
-    //     let (prefix, _rest) = LogPrefix::parse(line).expect("Failed to parse prefix");
-    //     assert_eq!(prefix.level, "ERROR");
-    // }
+    #[test]
+    fn test_without_level() {
+        let line = "[17:23:00] [Client-Main] 24 Achievements";
+        let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix");
+        assert_eq!(format!("{}", prefix.time), "17:23:00");
+        assert_eq!(prefix.thread, "Client-Main");
+        assert_eq!(rest, "24 Achievements");
+    }
 
     #[test]
     fn test_parse_partial_brackets() {
@@ -186,5 +233,14 @@ mod tests {
         assert_eq!(prefix.level, "INFO");
         assert_eq!(prefix.thread, "ForgeModLoader");
         assert_eq!(rest, "[AppEng] Core Init");
+    }
+
+    #[test]
+    fn test_parse_qtlogging() {
+        let line = r#"     0.001 D | Testing "/usr/share/PrismLauncher/qtlogging.ini" ..."#;
+        let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix with partial brackets");
+        assert_eq!(format!("{}", prefix.time), "00:00:00.001");
+        assert_eq!(prefix.level, "D");
+        assert_eq!(rest, r#"Testing "/usr/share/PrismLauncher/qtlogging.ini" ..."#);
     }
 }

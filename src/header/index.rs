@@ -1,7 +1,7 @@
 
 pub struct IndexedLogHeader<'a> {
     pub index: LogHeaderIndex,
-    pub header: &'a str,
+    pub text: &'a str,
 }
 
 #[allow(dead_code)]
@@ -9,14 +9,14 @@ impl IndexedLogHeader<'_> {
     pub fn index_header<'a>(header: &'a str) -> IndexedLogHeader<'a> {
         IndexedLogHeader {
             index: LogHeaderIndex::index_header(header),
-            header,
+            text: header,
         }
     }
 
     pub fn from_index<'a>(index: LogHeaderIndex, header: &'a str) -> IndexedLogHeader<'a> {
         IndexedLogHeader {
             index,
-            header,
+            text: header,
         }
     }
 }

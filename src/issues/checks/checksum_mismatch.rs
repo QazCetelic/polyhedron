@@ -1,11 +1,17 @@
-use crate::issues::issue::Issue;
+use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
-pub(crate) fn checksum_mismatch(text: &str) -> Option<Issue> {
-    text.contains("Checksum mismatch, download is bad.").then_some(Issue::ChecksumMismatch)
+// pub fn checksum_mismatch_text(text: &str) -> Option<Issue> {
+//     text.contains("Checksum mismatch, download is bad.").then_some(Issue::ChecksumMismatch)
+// }
+
+pub(crate) fn checksum_mismatch_entry(entry: &LogEntry) -> Option<Issue> {
+    entry.contents.starts_with("Checksum mismatch, download is bad.").then_some(Issue::ChecksumMismatch)
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::entries::entry::LogEntry;
+
     use super::*;
 
     #[test]
@@ -16,7 +22,8 @@ mod tests {
  35911.964 W | Checksum mismatch, download is bad.
  35912.081 W | Checksum mismatch, download is bad.
  35912.100 W | "One or more subtasks failed""#;
-        let issue = checksum_mismatch(&text).expect("Failed to determine issue");
+        let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+        let issue = entries.iter().filter_map(|e| checksum_mismatch_entry(e)).next().expect("Failed to determine issue");
         assert_eq!(issue, Issue::ChecksumMismatch);
     }
 }

@@ -1,11 +1,11 @@
 use lazy_regex::regex;
 
-use crate::issues::issue::Issue;
+use crate::{header::index::IndexedLogHeader, issues::issue::Issue};
 
-pub(crate) fn corrupted_instance(header_text: &str) -> Option<Issue> {
+pub(crate) fn corrupted_instance(header: &IndexedLogHeader<'_>) -> Option<Issue> {
     let pack_json_illegal_regex = regex!(r"mmc-pack.json.*illegal value");
 
-    pack_json_illegal_regex.is_match(header_text).then_some(Issue::InstanceDataCorrupted)
+    pack_json_illegal_regex.is_match(header.text).then_some(Issue::InstanceDataCorrupted)
 }
 
 #[cfg(test)]
@@ -43,7 +43,8 @@ Instance update failed because: Couldn't parse C:/Users/********/AppData/Roaming
 
 
 Log upload triggered at: 05 Oct 2025 20:51:11 -0700"#;
-        let issue = corrupted_instance(&header_fragment).expect("Failed to determine issue");
+        let indexed = IndexedLogHeader::index_header(header_fragment);
+        let issue = corrupted_instance(&indexed).expect("Failed to determine issue");
         assert_eq!(issue, Issue::InstanceDataCorrupted);
     }
 }

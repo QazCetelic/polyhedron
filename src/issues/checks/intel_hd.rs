@@ -1,8 +1,12 @@
-use crate::{header::extract::JavaVersionInfo, issues::issue::Issue};
+use crate::{entries::entry::LogEntry, header::{extract::JavaVersionInfo, index::IndexedLogHeader}, issues::issue::Issue};
 
 // "On first- and second- generation Intel HD graphics chipsets, a Java version below 8u60 is needed on Windows 10" https://minecrafthopper.net/help/pixel-format-not-accelerated/
 
-pub(crate) fn intel_hd(text: &str, java_version: Option<&JavaVersionInfo>) -> Option<Issue> {
+pub(crate) fn intel_hd_entry(entry: &LogEntry, java_version: Option<&JavaVersionInfo>) -> Option<Issue> {
+    intel_hd_text(&entry.contents, java_version)
+}
+
+pub(crate) fn intel_hd_text(text: &str, java_version: Option<&JavaVersionInfo>) -> Option<Issue> {
     // Prism Launcher recommended Java version for Intel HD 2000/3000 on Windows 10 https://prismlauncher.org/wiki/getting-started/installing-java/#a-note-about-intel-hd-20003000-on-windows-10
     let is_not_recommended_version = java_version.map(|i| i.version != "1.8.0_51");
     if text.contains("org.lwjgl.LWJGLException: Pixel format not accelerated") && is_not_recommended_version.unwrap_or(true) {
@@ -13,9 +17,14 @@ pub(crate) fn intel_hd(text: &str, java_version: Option<&JavaVersionInfo>) -> Op
     }
 }
 
+pub(crate) fn intel_hd(header: IndexedLogHeader<'_>, entries: &[LogEntry]) -> Option<Issue> {
+    let java_version = header.get_java_version();
+    entries.iter().filter_map(|e| intel_hd_entry(e, java_version.as_ref())).next()
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::header::index::IndexedLogHeader;
+    use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader};
 
     use super::*;
 
@@ -68,11 +77,12 @@ org.lwjgl.LWJGLException: Pixel format not accelerated
 // Who set us up the TNT?
 "#;
         let indexed = IndexedLogHeader::index_header(text);
-        let issue = intel_hd(&text, indexed.get_java_version().as_ref()).expect("Failed to determine issue");
+        let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+		let issue = entries.iter().filter_map(|e| intel_hd_entry(e, indexed.get_java_version().as_ref())).next().expect("Failed to determine issue");
         assert_eq!(issue, Issue::IntelHd);
     }
 
-#[test]
+    #[test]
     fn with_recommended_java() {
         let text = r#"
 Minecraft folder is:
@@ -121,19 +131,25 @@ org.lwjgl.LWJGLException: Pixel format not accelerated
 // Who set us up the TNT?
 "#;
         let indexed = IndexedLogHeader::index_header(text);
-        let issue = intel_hd(&text, indexed.get_java_version().as_ref());
+        let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+		let issue = entries.iter().filter_map(|e| intel_hd_entry(e, indexed.get_java_version().as_ref())).next();
         assert!(issue.is_none());
     }
 
     #[test]
-    fn recommended_version() {
+    fn recommended_version_no_version() {
         let text = "org.lwjgl.LWJGLException: Pixel format not accelerated";
-        assert!(intel_hd(&text, None).map(|issue| issue == Issue::IntelHd).expect("Failed to determine issue"));
+        assert!(intel_hd_text(&text, None).map(|issue| issue == Issue::IntelHd).expect("Failed to determine issue"));
+    }
+
+    #[test]
+    fn recommended_version_with_version() {
+        let text = "org.lwjgl.LWJGLException: Pixel format not accelerated";
         let version_info = JavaVersionInfo {
             version: "1.8.0_51".to_string(),
             architecture: "64 (amd64)".to_string(),
             vendor: "Oracle Corporation".to_string(),
         };
-        assert!(intel_hd(&text, Some(&version_info)).is_none());
+        assert!(intel_hd_text(&text, Some(&version_info)).is_none());
     }
 }

@@ -1,7 +1,12 @@
-use crate::{header::extract::ModInfo, issues::issue::Issue};
+use crate::{header::{extract::ModInfo, index::IndexedLogHeader}, issues::issue::Issue};
 
 fn optifine(mods: &[ModInfo]) -> Option<Issue> {
     mods.iter().any(|m| m.enabled && (m.name.starts_with("OptiFine") || m.name.starts_with("optifabric"))).then_some(Issue::Optifine)
+}
+
+pub(crate) fn optifine_header(header: &IndexedLogHeader<'_>) -> Option<Issue> {
+    let mods = header.get_mods()?;
+    optifine(&mods)
 }
 
 #[cfg(test)]

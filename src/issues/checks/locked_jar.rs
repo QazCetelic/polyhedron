@@ -1,4 +1,4 @@
-use crate::issues::issue::Issue;
+use crate::{header::index::IndexedLogHeader, issues::issue::Issue};
 
 pub(crate) fn locked_jar(header_text: &str) -> Option<Issue> {
     const EXTRACT_FAIL_PREFIX: &str = "Couldn't extract native jar '";
@@ -12,7 +12,11 @@ pub(crate) fn locked_jar(header_text: &str) -> Option<Issue> {
         index = extract_fail_index + EXTRACT_FAIL_PREFIX.len();
     }
 
-    Some(Issue::LockedJars(jars))
+    (!jars.is_empty()).then_some(Issue::LockedJars(jars))
+}
+
+pub(crate) fn locked_jar_header(header: &IndexedLogHeader<'_>) -> Option<Issue> {
+    locked_jar(header.text)
 }
 
 #[cfg(test)]
@@ -51,5 +55,19 @@ Couldn't extract native jar 'C:/Users/alhos/AppData/Roaming/PrismLauncher/librar
             "C:/Users/alhos/AppData/Roaming/PrismLauncher/libraries/tv/twitch/twitch-platform/6.5/twitch-platform-6.5-natives-windows-64.jar",
             "C:/Users/alhos/AppData/Roaming/PrismLauncher/libraries/tv/twitch/twitch-external-platform/4.5/twitch-external-platform-4.5-natives-windows-64.jar"
         ]);
+    }
+
+    #[test]
+    fn none() {
+        let text = r#"[23:07:35] [ForkJoinPool-1-worker-3/WARN]: Mod mr_more_cobblemonmoveanims uses the version 1.3.af which isn't compatible with Loader's extended semantic version format (Could not parse version number component 'af'!), SemVer is recommended for reliably evaluating dependencies and prioritizing newer version
+[23:07:35] [ForkJoinPool-1-worker-5/WARN]: The mod "sound_physics_perfected" contains invalid entries in its mod json:
+- Unsupported root entry "sugguests" at line 34 column 14
+[23:07:35] [ForkJoinPool-1-worker-9/WARN]: The mod "tcdcommons" contains invalid entries in its mod json:
+- Unsupported root entry "" at line 27 column 4
+- Unsupported root entry "" at line 27 column 198
+- Unsupported root entry "" at line 29 column 4
+- Unsupported root entry "" at line 29 column 24"#;
+        let issue = locked_jar(&text);
+        assert_eq!(issue, None);
     }
 }

@@ -1,15 +1,20 @@
-use crate::issues::issue::Issue;
+use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
-fn new_java_old_forge_legacy_java_fixer(entry_text: &str) -> Option<Issue> {
-    entry_text.contains("[SEVERE] [ForgeModLoader] Unable to launch\njava.util.ConcurrentModificationException").then_some(Issue::NewJavaOldForgeLegacyJavaFixer)
+pub(crate) fn new_java_old_forge_legacy_java_fixer(entry: &LogEntry) -> Option<Issue> {
+    let matches = entry.prefix.level == "SEVERE" 
+        && entry.prefix.thread == "ForgeModLoader"
+        && entry.contents.starts_with("Unable to launch\njava.util.ConcurrentModificationException");
+    matches.then_some(Issue::NewJavaOldForgeLegacyJavaFixer)
 }
 
-fn new_java_old_forge_ignore_certificates(entry_text: &str) -> Option<Issue> {
-    entry_text.contains("add the flag -Dfml.ignoreInvalidMinecraftCertificates=true to the 'JVM settings'").then_some(Issue::NewJavaOldForgeIgnoreCerts)
+pub(crate) fn new_java_old_forge_ignore_certificates(entry: &LogEntry) -> Option<Issue> {
+    entry.contents.contains("add the flag -Dfml.ignoreInvalidMinecraftCertificates=true to the 'JVM settings'").then_some(Issue::NewJavaOldForgeIgnoreCerts)
 }   
 
 #[cfg(test)]
 mod tests {
+    use crate::entries::entry::LogEntry;
+
     use super::*;
 
     #[test]
@@ -30,7 +35,8 @@ java.util.ConcurrentModificationException
     at org.prismlauncher.EntryPoint.listen(EntryPoint.java:144)
     at org.prismlauncher.EntryPoint.main(EntryPoint.java:74)
 ";
-        let issue = new_java_old_forge_legacy_java_fixer(&text).expect("Failed to determine issue");
+        let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+		let issue = entries.iter().filter_map(|e| new_java_old_forge_legacy_java_fixer(&e)).next().expect("Failed to determine issue");
         assert_eq!(issue, Issue::NewJavaOldForgeLegacyJavaFixer);
     }
 
@@ -40,7 +46,8 @@ java.util.ConcurrentModificationException
 2023-12-14 20:15:40 [SEVERE] [ForgeModLoader] For your safety, FML will not launch minecraft. You will need to fetch a clean version of the minecraft jar file
 2023-12-14 20:15:40 [SEVERE] [ForgeModLoader] Technical information: The class net.minecraft.client.ClientBrandRetriever should have been associated with the minecraft jar file, and should have returned us a valid, intact minecraft jar location. This did not work. Either you have modified the minecraft jar file (if so run the forge installer again), or you are using a base editing jar that is changing this class (and likely others too). If you REALLY want to run minecraft in this configuration, add the flag -Dfml.ignoreInvalidMinecraftCertificates=true to the 'JVM settings' in your launcher profile.
 ";
-        let issue = new_java_old_forge_ignore_certificates(&text).expect("Failed to determine issue");
+        let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+		let issue = entries.iter().filter_map(|e| new_java_old_forge_ignore_certificates(&e)).next().expect("Failed to determine issue");
         assert_eq!(issue, Issue::NewJavaOldForgeIgnoreCerts);
     }
 }

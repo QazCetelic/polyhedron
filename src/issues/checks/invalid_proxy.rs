@@ -1,7 +1,11 @@
-use crate::issues::issue::Issue;
+use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
-pub(crate) fn invalid_proxy(text: &str) -> Option<Issue> {
-    text.contains("Connection to proxy refused").then_some(Issue::InvalidProxy)
+// fn invalid_proxy_text(text: &str) -> Option<Issue> {
+//     text.contains("Connection to proxy refused").then_some(Issue::InvalidProxy)
+// }
+
+pub(crate) fn invalid_proxy_entry(entry: &LogEntry) -> Option<Issue> {
+    entry.contents.contains("Connection to proxy refused").then_some(Issue::InvalidProxy)
 }
 
 #[cfg(test)]
@@ -24,7 +28,8 @@ mod tests {
      0.369 C | [launcher.task.net.download]: "{88d12a72-aa17-44b4-9930-2577502a641c}" Failed "https://i18n.prismlauncher.org/index_v2.json" with reason QNetworkReply::ProxyConnectionRefusedError
      0.369 C | [launcher.task.net.download]: "{88d12a72-aa17-44b4-9930-2577502a641c}" HTTP Status 0 ;error "Connection to proxy refused"
 "#;
-        let issue = invalid_proxy(&text).expect("Failed to determine issue");
+        let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
+        let issue = entries.iter().filter_map(|e| invalid_proxy_entry(e)).next().expect("Failed to determine issue");
         assert_eq!(issue, Issue::InvalidProxy);
     }
 }
