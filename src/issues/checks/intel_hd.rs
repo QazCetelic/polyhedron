@@ -17,11 +17,6 @@ pub(crate) fn intel_hd_text(text: &str, java_version: Option<&JavaVersionInfo>) 
     }
 }
 
-pub(crate) fn intel_hd(header: IndexedLogHeader<'_>, entries: &[LogEntry]) -> Option<Issue> {
-    let java_version = header.get_java_version();
-    entries.iter().filter_map(|e| intel_hd_entry(e, java_version.as_ref())).next()
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader};
