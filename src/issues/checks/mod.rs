@@ -33,10 +33,16 @@ pub mod invalid_proxy;
 pub mod shader_compile_error;
 
 #[allow(dead_code)]
-const CHECKS_FULL_TEXT: [for<'a> fn(&str) -> Option<super::issue::Issue>; 3] = [
-    fabric_internal::fabric_internal,
-    java_32_bit::java_32_bit,
-    x11_connect_failure::x11_connect_failure,
+pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) -> Option<Issue>>; 3] = [
+    |_header| { 
+        Box::new(|text| fabric_internal::fabric_internal(text)) 
+    },
+    |_header| { 
+        Box::new(|text| java_32_bit::java_32_bit(text)) 
+    },
+    |_header| { 
+        Box::new(|text| x11_connect_failure::x11_connect_failure(text)) 
+    },
 ];
 
 #[allow(dead_code)]

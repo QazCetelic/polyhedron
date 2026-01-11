@@ -2,7 +2,7 @@ use std::io::{BufRead, ErrorKind};
 
 use thiserror::Error;
 
-use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_ENTRIES, CHECKS_HEADER}, issue::Issue}};
+use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_ENTRIES, CHECKS_HEADER, CHECKS_TEXT}, issue::Issue}};
 
 mod entries;
 mod header;
@@ -88,6 +88,18 @@ fn find_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry]) -> Vec<Issue
         let entry_check = build_entry_check(header);
         for entry in entries {
             if let Some(issue) = entry_check(entry) {
+                issues.push(issue);
+            }
+        }
+    }
+
+    let checks_text = CHECKS_TEXT.map(|c| c(header));
+    for text_check in checks_text {
+        if let Some(issue) = text_check(header.text) {
+            issues.push(issue);
+        }
+        for entry in entries {
+            if let Some(issue) = text_check(&entry.contents) {
                 issues.push(issue);
             }
         }
