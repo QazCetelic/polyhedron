@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug)]
-pub struct LogPrefixDate {
+pub struct LogDate {
     pub day: u8,
     pub month: u8,
     pub year: u16,
@@ -10,28 +10,28 @@ pub struct LogPrefixDate {
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug)]
-pub struct LogPrefixTime {
-    pub date: Option<LogPrefixDate>,
+pub struct LogTime {
+    pub date: Option<LogDate>,
     pub hour: u8,
     pub minute: u8,
     pub second: u8,
     pub millisecond: Option<u16>,
 }
 
-impl LogPrefixTime {
+impl LogTime {
     pub fn parse(time_str: &str) -> Option<Self> {
         if let Some(time) = Self::parse_rfc_3339(time_str) {
             return Some(time);
         }
         let (without_suffix, _is_pm) = strip_meridiem(time_str);
         let (date, time_part) = if let Some((date_str, time_str)) = without_suffix.split_once(' ') {
-            (Some(LogPrefixDate::parse(date_str)?), time_str)
+            (Some(LogDate::parse(date_str)?), time_str)
         }
         else {
             (None, without_suffix)
         };
         let (hour, minute, second, millisecond) = parse_time(time_part)?;
-        let time = LogPrefixTime {
+        let time = LogTime {
             date,
             hour,
             minute,
@@ -46,7 +46,7 @@ impl LogPrefixTime {
         let (date_str, time_str) = time_str.strip_suffix('Z')?.split_once('T')?;
         let date = parse_iso_date(date_str)?;
         let (hour, minute, second, millisecond) = parse_iso_time(time_str)?;
-        Some(LogPrefixTime {
+        Some(LogTime {
             date: Some(date),
             hour,
             minute,
@@ -56,7 +56,7 @@ impl LogPrefixTime {
     }
 }
 
-impl Display for LogPrefixTime {
+impl Display for LogTime {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(date) = &self.date {
             write!(f, "{:04}-{:02}-{:02} ", date.year, date.month, date.day)?;
@@ -99,27 +99,27 @@ fn parse_iso_time(time: &str) -> Option<(u8, u8, u8, u16)> {
 }
 
 // "2025-10-30" -> {2025, 10, 30}
-fn parse_iso_date(date: &str) -> Option<LogPrefixDate> {
+fn parse_iso_date(date: &str) -> Option<LogDate> {
     let year: u16 = date.get(0..4)?.parse().ok()?;
     if date.get(4..5)? != "-" { return None; }
     let month: u8 = date.get(5..7)?.parse().ok()?;
     if date.get(7..8)? != "-" { return None; }
     let day: u8 = date.get(8..10)?.parse().ok()?;
-    Some(LogPrefixDate { day, month, year })
+    Some(LogDate { day, month, year })
 }
 
 // "02/12/2025" -> {2025, 12, 2}
-fn parse_eu_date(date: &str) -> Option<LogPrefixDate> {
+fn parse_eu_date(date: &str) -> Option<LogDate> {
     let (day_str, month_and_year) = date.split_once('/')?;
     let (month_str, year_str) = month_and_year.split_once('/')?;
     let day: u8 = day_str.parse().ok()?;
     let month: u8 = month_str.parse().ok()?;
     let year: u16 = year_str.parse().ok()?;
-    Some(LogPrefixDate { day, month, year })
+    Some(LogDate { day, month, year })
 }
 
 // "04Dec2025" -> {2025, 12, 04}
-fn parse_named_month_date(date: &str) -> Option<LogPrefixDate> {
+fn parse_named_month_date(date: &str) -> Option<LogDate> {
     if date.len() < 9 {
         return None;
     }
@@ -140,7 +140,7 @@ fn parse_named_month_date(date: &str) -> Option<LogPrefixDate> {
         year = year * 10 + (c.to_digit(10)? as u16);
     }
     let month: u8 = month_str_to_number(&month_name)?;
-    Some(LogPrefixDate { day, month, year })
+    Some(LogDate { day, month, year })
 }
 
 /// Strips " AM" or " PM" suffix from the time string and indicates if it was PM.
@@ -155,8 +155,8 @@ fn strip_meridiem(time_str: &str) -> (&str, bool) {
 }
 
 /// O(1) parses date strings in various formats
-impl LogPrefixDate {
-    fn parse(date_str: &str) -> Option<LogPrefixDate> {
+impl LogDate {
+    fn parse(date_str: &str) -> Option<LogDate> {
         if date_str.len() > 23 {
             // "12Sept2025 00:41:16.572"
             return None;
@@ -202,7 +202,7 @@ mod tests {
     #[test]
     fn simple() {
         let time_str = "16:20:50";
-        let time = LogPrefixTime::parse(time_str).expect("Failed to parse simple time");
+        let time = LogTime::parse(time_str).expect("Failed to parse simple time");
         assert!(time.date.is_none());
         assert_eq!(time.hour, 16);
         assert_eq!(time.minute, 20);
@@ -213,7 +213,7 @@ mod tests {
     #[test]
     fn date() {
         let time_str = "02/12/2025 14:45:51 PM";
-        let time = LogPrefixTime::parse(time_str).expect("Failed to parse date and time");
+        let time = LogTime::parse(time_str).expect("Failed to parse date and time");
         assert_eq!(time.date.map(|d| (d.day, d.month, d.year)), Some((2, 12, 2025)));
         assert_eq!(time.hour, 14);
         assert_eq!(time.minute, 45);
@@ -223,7 +223,7 @@ mod tests {
     #[test]
     fn milliseconds() {
         let time_str = "08:33:03.471";
-        let time = LogPrefixTime::parse(time_str).expect("Failed to parse time with milliseconds");
+        let time = LogTime::parse(time_str).expect("Failed to parse time with milliseconds");
         assert!(time.date.is_none());
         assert_eq!(time.hour, 8);
         assert_eq!(time.minute, 33);
@@ -234,7 +234,7 @@ mod tests {
     #[test]
     fn named_month() {
         let time_str = "04Dec2025 20:16:35.371";
-        let time = LogPrefixTime::parse(time_str).expect("Failed to parse time with named month");
+        let time = LogTime::parse(time_str).expect("Failed to parse time with named month");
         assert_eq!(time.date.map(|d| (d.day, d.month, d.year)), Some((4, 12, 2025)));
         assert_eq!(time.hour, 20);
         assert_eq!(time.minute, 16);
@@ -245,7 +245,7 @@ mod tests {
     #[test]
     fn rfc3339() {
         let time_str = "2025-10-30T19:21:06.036061Z";
-        let time = LogPrefixTime::parse(time_str).expect("Failed to parse RFC3339 time");
+        let time = LogTime::parse(time_str).expect("Failed to parse RFC3339 time");
         assert_eq!(time.date.map(|d| (d.day, d.month, d.year)), Some((30, 10, 2025)));
         assert_eq!(time.hour, 19);
         assert_eq!(time.minute, 21);
@@ -278,7 +278,7 @@ mod tests {
             "2024-07-11 04:30:53",
         ];
         for time_str in examples {
-            let _time = LogPrefixTime::parse(time_str).expect(&format!("Failed to parse time: {}", time_str));
+            let _time = LogTime::parse(time_str).expect(&format!("Failed to parse time: {}", time_str));
         }
     }
 }

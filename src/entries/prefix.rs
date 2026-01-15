@@ -1,11 +1,11 @@
-use crate::{entries::time::LogPrefixTime, parse::stacktrace::is_valid_classname};
+use crate::{entries::time::LogTime, parse::stacktrace::is_valid_classname};
 
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Clone, Debug)]
 pub struct LogPrefix {
     /// Timestamp of the log entry, optionally including date and milliseconds
-    pub time: LogPrefixTime,
+    pub time: LogTime,
     /// Thread / source from which the log originated
     pub thread: String,
     /// Log level like INFO, WARN, ERROR
@@ -37,7 +37,7 @@ fn basic_strip_ansi_escape(mut line: &str) -> &str {
 // "2025-10-30T19:21:06.036061Z main WARN Advanced terminal features are not available in this environment"
 fn parse_iso_no_brackets(line: &str) -> Option<(LogPrefix, &str)> {
     let (time_str, rest) = line.split_once(' ')?;
-    let time = LogPrefixTime::parse(time_str)?; // "2025-10-30T19:21:06.036061Z"
+    let time = LogTime::parse(time_str)?; // "2025-10-30T19:21:06.036061Z"
     let (thread_str, rest) = rest.split_once(' ')?;
     let (level_str, rest) = rest.split_once(' ')?;
     let prefix = LogPrefix {
@@ -54,7 +54,7 @@ fn parse_iso_no_brackets(line: &str) -> Option<(LogPrefix, &str)> {
 fn parse_with_brackets(line: &str) -> Option<(LogPrefix, &str)> {
     let line = line.strip_prefix('[')?;
     let (time_str, rest) = line.split_once("] [")?;
-    let time = LogPrefixTime::parse(time_str)?; // "16:20:50"
+    let time = LogTime::parse(time_str)?; // "16:20:50"
     let (thread_level_context_str, rest_of_line) = rest.split_once("]: ")?;
     let (thread_level_str, context_str_opt, msg) = if let Some((before, after)) = thread_level_context_str.rsplit_once("] [") {
         (before, Some(after), rest_of_line)
@@ -81,7 +81,7 @@ fn parse_with_brackets(line: &str) -> Option<(LogPrefix, &str)> {
 fn parse_partial_brackets(line: &str) -> Option<(LogPrefix, &str)> {
     let time_str = line.get(0..19)?; // "2025-12-13 11:59:21"
     let rest = line.get(19..)?; // " [INFO] [MiscPeripheralsASM] Initialized"
-    let time = LogPrefixTime::parse(time_str)?;
+    let time = LogTime::parse(time_str)?;
     let (level, rest) = rest.strip_prefix(" [")?.split_once("] [")?;
     let (source, rest) = rest.split_once("] ")?;
     let prefix = LogPrefix {
@@ -97,7 +97,7 @@ fn parse_partial_brackets(line: &str) -> Option<(LogPrefix, &str)> {
 // "[17:23:00] [Client-Main] 24 Achievements"
 fn parse_no_level(line: &str) -> Option<(LogPrefix, &str)> {
     let (time_str, rest) = line.strip_prefix('[')?.split_once("] [")?;
-    let time = LogPrefixTime::parse(time_str)?;
+    let time = LogTime::parse(time_str)?;
     let (thread, rest) = rest.split_once("] ")?;
      let prefix = LogPrefix {
         time,
@@ -120,7 +120,7 @@ fn parse_qtlogging(line: &str) -> Option<(LogPrefix, &str)> {
     let second: u8 = (sec % 60).try_into().ok()?;
     let minute: u8 = (sec / 60 % 60).try_into().ok()?;
     let hour: u8 = (sec / 60 / 60).try_into().ok()?;
-    let time = LogPrefixTime {
+    let time = LogTime {
         date: None,
         hour,
         minute,
