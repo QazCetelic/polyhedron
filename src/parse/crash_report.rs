@@ -68,13 +68,14 @@ fn split_sections(s: &str) -> BTreeMap<String, String> { // The sections appear 
 
 #[cfg(test)]
 mod tests {
-    use crate::parse::crash_report::CrashReport;
+    use crate::parse::{crash_report::CrashReport, section_tree::SectionTree};
 
 
     #[test]
     fn simple() {
         let text = include_str!("test_data/crash_1.log");
         let report = CrashReport::parse(text).expect("Failed to parse crash report");
-        dbg!(report.sections.get("System Details"));
+        let sytem_details = report.sections.get("System Details").expect("Failed to get System Details section");
+        let tree = SectionTree::parse(sytem_details).expect("Failed to parse system details");
     }
 }

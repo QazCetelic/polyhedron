@@ -10,6 +10,22 @@ impl SectionTree {
         let keypairs: Vec<(usize, &str, Option<&str>)> = parse_to_keypairs(text)?;
         Some(SectionTree(build_tree(&keypairs, 0)))
     }
+
+    pub fn get_text(&self, keys: &[&str]) -> Option<&String> {
+        let mut key_iter = keys.iter();
+        let mut current: &SectionTreeLeaf = self.0.get(*key_iter.next()?)?;
+        for key in key_iter {
+            match current {
+                SectionTreeLeaf::Tree(subtree) => current = subtree.get(*key)?,
+                _ => return None,
+            }
+        }
+
+        match current {
+            SectionTreeLeaf::Text(text) => Some(&text),
+            _ => None,
+        }
+    }
 }
 
 impl Deref for SectionTree {
@@ -72,9 +88,8 @@ Details:
 \t\tbalm: Balm 21.5.25
 ";
         let tree = SectionTree::parse(&text).expect("Failed to parse tree");
-        let SectionTreeLeaf::Tree(details_node) = tree.get("Details").expect("Failed to get details node") else { panic!("Not a tree node"); };
-        let SectionTreeLeaf::Text(mc_version_value) = details_node.get("Minecraft Version").expect("Failed to get mc version node") else { panic!("Not a text node"); };
-        assert_eq!(mc_version_value, "1.21.5");
+        let mc_version = tree.get_text(&["Details", "Minecraft Version"]).unwrap();
+        assert_eq!(mc_version, "1.21.5");
         dbg!(tree);
     }
 }
