@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::{entries::time::LogTime, parse::stacktrace::Stacktrace};
 
+#[allow(dead_code)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug)]
 pub struct CrashReport {
@@ -14,7 +15,7 @@ pub struct CrashReport {
 impl CrashReport {
     pub fn parse(text: &str) -> Option<CrashReport> {
         let (_, report_etc) = text.split_once("---- Minecraft Crash Report ----")?;
-        let (remarks, time_etc) = report_etc.split_once("Time: ")?;
+        let (_remarks, time_etc) = report_etc.split_once("Time: ")?;
         // The remarks section sometimes contains additional comments about e.g. coremods that may be useful
         let (time_str, description_etc) = time_etc.split_once("Description: ")?;
         let time_str = time_str.trim_ascii_end();
@@ -82,6 +83,6 @@ mod tests {
         assert_eq!(stacktrace.message, "class net.minecraft.class_1703 tried to access private field net.minecraft.class_1661.field_7545 (net.minecraft.class_1703 and net.minecraft.class_1661 are in unnamed module of loader 'knot' @40e6dfe1)");
         dbg!(&report);
         let sytem_details = report.sections.get("System Details").expect("Failed to get System Details section");
-        let tree = SectionTree::parse(sytem_details).expect("Failed to parse system details");
+        let _tree = SectionTree::parse(sytem_details).expect("Failed to parse system details");
     }
 }

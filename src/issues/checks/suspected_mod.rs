@@ -1,4 +1,4 @@
-use crate::{issues::issue::Issue, parse::section_tree::parse_to_keypairs};
+use crate::issues::issue::Issue;
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, PartialEq, Eq)]

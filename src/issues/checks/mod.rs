@@ -1,4 +1,4 @@
-use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader, issues::{checks::{shader_compile_error::shader_compile_error, intel_hd::intel_hd_entry}, issue::Issue}};
+use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader, issues::{checks::intel_hd::intel_hd_entry, issue::Issue}};
 
 pub mod flatpak_nvidia;
 pub mod fabric_internal;

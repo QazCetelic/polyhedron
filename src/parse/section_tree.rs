@@ -73,7 +73,7 @@ pub(crate) fn parse_to_keypairs(text: &str) -> Option<Vec<(usize, &str, Option<&
 
 #[cfg(test)]
 mod tests {
-    use crate::parse::section_tree::{SectionTree, SectionTreeLeaf};
+    use crate::parse::section_tree::SectionTree;
 
 
     #[test]

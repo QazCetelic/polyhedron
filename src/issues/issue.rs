@@ -1,5 +1,3 @@
-use core::error;
-
 use thiserror::Error;
 
 use crate::issues::checks::suspected_mod::SuspectedModInfo;

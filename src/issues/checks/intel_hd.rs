@@ -1,4 +1,4 @@
-use crate::{entries::entry::LogEntry, header::{extract::JavaVersionInfo, index::IndexedLogHeader}, issues::issue::Issue};
+use crate::{entries::entry::LogEntry, header::extract::JavaVersionInfo, issues::issue::Issue};
 
 // "On first- and second- generation Intel HD graphics chipsets, a Java version below 8u60 is needed on Windows 10" https://minecrafthopper.net/help/pixel-format-not-accelerated/
 
