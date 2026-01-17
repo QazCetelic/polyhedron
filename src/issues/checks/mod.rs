@@ -37,13 +37,13 @@ pub mod entrypoint_execution_errors;
 #[allow(dead_code)]
 pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) -> Option<Issue>>; 3] = [
     |_header| { 
-        Box::new(|text| fabric_internal::fabric_internal(text)) 
+        Box::new(fabric_internal::fabric_internal) 
     },
     |_header| { 
-        Box::new(|text| java_32_bit::java_32_bit(text)) 
+        Box::new(java_32_bit::java_32_bit) 
     },
     |_header| { 
-        Box::new(|text| x11_connect_failure::x11_connect_failure(text)) 
+        Box::new(x11_connect_failure::x11_connect_failure) 
     }
 ];
 

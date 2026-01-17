@@ -69,7 +69,7 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
     let mut issues = find_issues(&indexed_header, &entries);
 
     let mut crash_report = header_crash_report;
-    for entry in entries.iter().rev().take(50) {
+    for entry in entries.iter().rev().take(75) {
         if let Some(report) = CrashReport::parse(&entry.contents) {
             crash_report = Some(report);
             break;

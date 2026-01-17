@@ -55,6 +55,8 @@ pub(crate) fn check_suspected_mod_crash_report(report: &CrashReport) -> Option<I
 
 #[cfg(test)]
 mod tests {
+    use crate::parse::normalize_mod_name;
+
     use super::*;
 
     #[test]
@@ -65,6 +67,7 @@ mod tests {
         let suspected_mod = &suspected_mods[0];
         assert_eq!(suspected_mod.mod_name, "Selling Bin");
         assert_eq!(suspected_mod.mod_name_normalized, "sellingbin");
+        assert_eq!(suspected_mod.mod_name_normalized, normalize_mod_name::normalize_mod_name("SellingBin-mc1.20.1-v1.0.9-forge"));
         assert_eq!(suspected_mod.mod_version, "1.0.9");
         assert_eq!(suspected_mod.issue_tracker.as_ref().unwrap(), "https://github.com/bigchadguys/DailyShop/issues");
     }
