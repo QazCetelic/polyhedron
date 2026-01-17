@@ -31,9 +31,10 @@ pub mod invalid_folder_name;
 pub mod corrupted_instance;
 pub mod invalid_proxy;
 pub mod shader_compile_error;
+pub mod suspected_mod;
 
 #[allow(dead_code)]
-pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) -> Option<Issue>>; 3] = [
+pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) -> Option<Issue>>; 4] = [
     |_header| { 
         Box::new(|text| fabric_internal::fabric_internal(text)) 
     },
@@ -42,6 +43,9 @@ pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) ->
     },
     |_header| { 
         Box::new(|text| x11_connect_failure::x11_connect_failure(text)) 
+    },
+    |_header| { 
+        Box::new(|text| suspected_mod::check_suspected_mod_text(text)) 
     },
 ];
 

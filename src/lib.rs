@@ -2,7 +2,7 @@ use std::io::{BufRead, ErrorKind};
 
 use thiserror::Error;
 
-use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_ENTRIES, CHECKS_HEADER, CHECKS_TEXT}, issue::Issue}};
+use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_ENTRIES, CHECKS_HEADER, CHECKS_TEXT}, issue::Issue}, parse::crash_report::CrashReport};
 
 mod entries;
 mod header;
@@ -24,10 +24,11 @@ pub struct ReadLog {
     pub header_info: LogHeaderInfo,
     pub header_index: LogHeaderIndex,
     pub entries: Vec<LogEntry>,
-    pub issues: Vec<Issue>
+    pub issues: Vec<Issue>,
+    pub crash_report: Option<CrashReport>
 }
 
-pub fn read_log<R: BufRead>(mut reader: R) -> Result<ReadLog, ReadLogError> {
+pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
     let mut lines = reader.lines().peekable();
     let first_line = lines.peek().ok_or(ReadLogError::Empty)?.as_ref().map_err(|e| ReadLogError::Encoding(e.kind()))?;
     let launcher_info = LauncherInfo::from_first_line(&first_line);
@@ -49,6 +50,8 @@ pub fn read_log<R: BufRead>(mut reader: R) -> Result<ReadLog, ReadLogError> {
     let index = LogHeaderIndex::index_header(&header_buffer);
     let indexed_header = IndexedLogHeader::from_index(index.clone(), &header_buffer);
     let header_info = LogHeaderInfo::from_indexed_header(&indexed_header);
+
+    let header_crash_report = CrashReport::parse(&header_buffer);
     
     let mut entries: Vec<LogEntry> = Vec::new();
     let mut parser =  LogEntryParser::new();
@@ -65,13 +68,22 @@ pub fn read_log<R: BufRead>(mut reader: R) -> Result<ReadLog, ReadLogError> {
     let indexed_header = IndexedLogHeader::from_index(index.clone(), &header_buffer);
     let issues = find_issues(&indexed_header, &entries);
 
+    let mut crash_report = header_crash_report;
+    for entry in entries.iter().rev().take(50) {
+        if let Some(report) = CrashReport::parse(&entry.contents) {
+            crash_report = Some(report);
+            break;
+        }
+    }
+
     Ok(ReadLog {
         launcher_info,
         header: header_buffer,
         header_info: header_info,
         header_index: index,
         entries,
-        issues
+        issues,
+        crash_report,
     })
 }
 

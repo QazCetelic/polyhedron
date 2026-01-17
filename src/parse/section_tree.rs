@@ -54,7 +54,7 @@ fn build_tree(keypairs: &[(usize, &str, Option<&str>)], level: usize) -> NestedS
     root
 }
 
-fn parse_to_keypairs(text: &str) -> Option<Vec<(usize, &str, Option<&str>)>> {
+pub(crate) fn parse_to_keypairs(text: &str) -> Option<Vec<(usize, &str, Option<&str>)>> {
     let mut vec: Vec<(usize, &str, Option<&str>)> = Default::default();
 
     for line in text.lines() {

@@ -1,4 +1,4 @@
-use std::str::Lines;
+use std::{f32::consts::E, str::Lines};
 
 #[derive(Debug)]
 pub struct StacktraceParser {
@@ -8,6 +8,7 @@ pub struct StacktraceParser {
 }
 
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[allow(dead_code)]
 pub struct StacktraceLine {
     class: String,
@@ -30,17 +31,36 @@ impl StacktraceLine {
             None
         }
     }
+
+    /// Gets the relative file path of the source code and the line
+    pub fn get_relative_path(&self) -> Option<(String, usize)> {
+        // "EntryPoint.java:70"
+        let (class_name, line) = self.source.split_once(".java:")?;
+        let line: usize = line.parse().ok()?;
+        if !valid_java_identifier(class_name) || !self.class.ends_with(class_name) {
+            return None;
+        }
+        let mut path = String::with_capacity(self.class.len());
+        let mut iter = self.class.split('.').peekable();
+        while let Some(part) = iter.next() {
+            path.push_str(part);
+            if iter.peek().is_some() {
+                path.push('/');
+            }
+        }
+        path.push_str(".java");
+        Some((path, line))
+    }
 }
 
 #[derive(Debug)]
-#[allow(dead_code)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Stacktrace {
-    pub exception: Option<String>,
-    pub message: Option<String>,
+    pub exception: String,
+    pub message: String,
     lines: Vec<StacktraceLine>,
 }
 
-#[allow(dead_code)]
 impl Stacktrace {
     pub fn from_lines(lines: Lines) -> impl Iterator<Item = Stacktrace> {
         let mut parser = StacktraceParser::new();
@@ -120,11 +140,11 @@ impl StacktraceParser {
     }
 
     pub fn parse_line(&mut self, line: &str) -> Option<Stacktrace> {
-        if let Some((exception, message)) = parse_exception(line) { // "org.lwjgl.LWJGLException: Could not choose GLX13 config"
+        if let Some((exception, message)) = parse_exception(line.strip_prefix("Caused by: ").unwrap_or(line)) { // "org.lwjgl.LWJGLException: Could not choose GLX13 config"
+            let trace_opt = self.finalize();
             self.exception = Some(exception.to_string());
             self.message = Some(message.to_string());
-            self.lines.clear();
-            None
+            trace_opt
         }
         else {
             let indent = line.starts_with('\t') || line.starts_with("    ");
@@ -156,10 +176,13 @@ impl StacktraceParser {
             None
         }
         else {
+            let exception = self.exception.take();
+            let message = self.message.take();
+            let lines = std::mem::take(&mut self.lines);
             let trace = Stacktrace {
-                exception: self.exception.take(),
-                message: self.message.take(),
-                lines: std::mem::take(&mut self.lines),
+                exception: exception?,
+                message: message?,
+                lines,
             };
             self.lines = Vec::new();
             Some(trace)
@@ -241,8 +264,8 @@ org.lwjgl.LWJGLException: Could not choose GLX13 config
         let trace = traces.next().expect("Failed to get trace");
         assert!(traces.next().is_none());
 
-        assert_eq!(trace.exception.expect("No exception"), "org.lwjgl.LWJGLException");
-        assert_eq!(trace.message.expect("No message"), "Could not choose GLX13 config");
+        assert_eq!(trace.exception, "org.lwjgl.LWJGLException");
+        assert_eq!(trace.message, "Could not choose GLX13 config");
         assert_eq!(trace.lines.len(), 19);
         let first_trace_line = trace.lines.first().expect("No trace lines");
         assert_eq!(first_trace_line.method, "initDefaultPeerInfo");
@@ -284,10 +307,61 @@ ERROR: 0:5: 'a' : syntax error syntax error
         let lines = crash_report.lines();
         let mut traces = Stacktrace::from_lines(lines);
         let trace = traces.next().expect("Failed to get trace");
-        let exception = trace.exception.expect("No exception");
-        assert_eq!(exception, "java.lang.Throwable");
-        let message = trace.message.expect("Failed to get message");
-        assert!(message.starts_with("id=0, source=SHADER COMPILER, type=ERROR, severity=HIGH, message='SHADER_ID_COMPILE error has been generated."));
-        assert!(message.ends_with("ERROR: 0:5: 'a' : syntax error syntax error\n\n'"));
+        assert_eq!(trace.exception, "java.lang.Throwable");
+        assert!(trace.message.starts_with("id=0, source=SHADER COMPILER, type=ERROR, severity=HIGH, message='SHADER_ID_COMPILE error has been generated."));
+        assert!(trace.message.ends_with("ERROR: 0:5: 'a' : syntax error syntax error\n\n'"));
+    }
+
+    #[test]
+    fn parse_caused_by() {
+        let crash_report = "java.lang.RuntimeException: Could not execute entrypoint stage 'client' due to errors, provided by 'betteradvancements' at 'betteradvancements.fabric.BetterAdvancements'!
+	at net.fabricmc.loader.impl.FabricLoaderImpl.lambda$invokeEntrypoints$0(FabricLoaderImpl.java:409)
+	at net.fabricmc.loader.impl.util.ExceptionUtil.gatherExceptions(ExceptionUtil.java:33)
+	at net.fabricmc.loader.impl.FabricLoaderImpl.invokeEntrypoints(FabricLoaderImpl.java:407)
+	at net.fabricmc.loader.impl.game.minecraft.Hooks.startClient(Hooks.java:53)
+	at knot//net.minecraft.class_310.<init>(class_310.java:475)
+	at knot//net.minecraft.client.main.Main.main(Main.java:234)
+	at net.fabricmc.loader.impl.game.minecraft.MinecraftGameProvider.launch(MinecraftGameProvider.java:514)
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:72)
+	at net.fabricmc.loader.impl.launch.knot.KnotClient.main(KnotClient.java:23)
+	at org.prismlauncher.launcher.impl.StandardLauncher.launch(StandardLauncher.java:105)
+	at org.prismlauncher.EntryPoint.listen(EntryPoint.java:129)
+	at org.prismlauncher.EntryPoint.main(EntryPoint.java:70)
+Caused by: java.lang.IncompatibleClassChangeError: class betteradvancements.common.gui.BetterAdvancementsScreenButton overrides final method net.minecraft.class_4264.method_48579(Lnet/minecraft/class_332;IIF)V
+	at java.base/java.lang.ClassLoader.defineClass1(Native Method)
+	at java.base/java.lang.ClassLoader.defineClass(ClassLoader.java:1027)
+	at java.base/java.security.SecureClassLoader.defineClass(SecureClassLoader.java:150)
+	at net.fabricmc.loader.impl.launch.knot.KnotClassLoader.defineClassFwd(KnotClassLoader.java:165)
+	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.tryLoadClass(KnotClassDelegate.java:368)
+	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.loadClass(KnotClassDelegate.java:231)
+	at net.fabricmc.loader.impl.launch.knot.KnotClassLoader.loadClass(KnotClassLoader.java:119)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526)
+	at knot//betteradvancements.fabric.config.ConfigFileHandler.readFromConfig(ConfigFileHandler.java:70)
+	at knot//betteradvancements.fabric.BetterAdvancements.onInitializeClient(BetterAdvancements.java:12)
+	at net.fabricmc.loader.impl.FabricLoaderImpl.invokeEntrypoints(FabricLoaderImpl.java:405)
+	... 9 more";
+        let lines = crash_report.lines();
+        let mut traces = Stacktrace::from_lines(lines);
+        
+        let trace_1 = traces.next().expect("Failed to get trace");
+        assert_eq!(trace_1.exception, "java.lang.RuntimeException");
+        assert_eq!(trace_1.message, "Could not execute entrypoint stage 'client' due to errors, provided by 'betteradvancements' at 'betteradvancements.fabric.BetterAdvancements'!");
+        assert_eq!(trace_1.lines.len(), 12);
+        assert_eq!(trace_1.lines[0].method, "lambda$invokeEntrypoints$0");
+        assert_eq!(trace_1.lines[5].method, "main");
+        assert_eq!(trace_1.lines[7].source, "Knot.java:72");
+        assert_eq!(trace_1.lines[11].class, "org.prismlauncher.EntryPoint");
+        let file_path_1 = trace_1.lines[11].get_relative_path().unwrap();
+        assert_eq!(file_path_1.0, "org/prismlauncher/EntryPoint.java");
+        assert_eq!(file_path_1.1, 70);
+        
+        let trace_2 = traces.next().expect("Failed to get trace");
+        assert_eq!(trace_2.exception, "java.lang.IncompatibleClassChangeError");
+        assert_eq!(trace_2.message, "class betteradvancements.common.gui.BetterAdvancementsScreenButton overrides final method net.minecraft.class_4264.method_48579(Lnet/minecraft/class_332;IIF)V");
+        assert_eq!(trace_2.lines.len(), 11);
+        assert_eq!(trace_2.lines[0].method, "defineClass1");
+        assert_eq!(trace_2.lines[5].method, "loadClass");
+        assert_eq!(trace_2.lines[8].source, "ConfigFileHandler.java:70");
+        assert_eq!(trace_2.lines[10].class, "net.fabricmc.loader.impl.FabricLoaderImpl");
     }
 }

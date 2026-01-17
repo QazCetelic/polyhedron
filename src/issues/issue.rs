@@ -1,4 +1,8 @@
+use core::error;
+
 use thiserror::Error;
+
+use crate::issues::checks::suspected_mod::SuspectedModInfo;
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Error, Debug, PartialEq, Eq)]
@@ -70,4 +74,6 @@ pub enum Issue {
     InvalidProxy,
     #[error("Failed to compile GLSL shader")]
     ShaderCompileError,
+    #[error("Suspected mod")]
+    ForgeSuspectedMod(Vec<SuspectedModInfo>),
 }

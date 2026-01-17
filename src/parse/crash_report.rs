@@ -1,17 +1,18 @@
 use std::collections::BTreeMap;
 
-use crate::entries::time::LogTime;
+use crate::{entries::time::LogTime, parse::stacktrace::Stacktrace};
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug)]
-struct CrashReport {
+pub struct CrashReport {
     time: LogTime,
     description: String,
-    stacktrace: String, // TODO parse stacktrace
+    stacktrace: Vec<Stacktrace>,
     sections: BTreeMap<String, String>
 }
 
 impl CrashReport {
-    fn parse(text: &str) -> Option<CrashReport> {
+    pub fn parse(text: &str) -> Option<CrashReport> {
         let (_, report_etc) = text.split_once("---- Minecraft Crash Report ----")?;
         let (remarks, time_etc) = report_etc.split_once("Time: ")?;
         // The remarks section sometimes contains additional comments about e.g. coremods that may be useful
@@ -22,6 +23,7 @@ impl CrashReport {
         let description = description.trim_ascii_end().to_string();
         let (stacktrace, etc) = stacktrace_etc.split_once("A detailed walkthrough of the error, its code path and all known details is as follows:")?;
         let stacktrace = stacktrace.trim_ascii().to_string();
+        let stacktrace = Stacktrace::from_lines(stacktrace.lines()).collect();
         let (_, etc) = etc.trim_ascii_start().split_once("---------------------------------------------------------------------------------------")?;
         let sections = split_sections(etc);
 
@@ -75,6 +77,10 @@ mod tests {
     fn simple() {
         let text = include_str!("test_data/crash_1.log");
         let report = CrashReport::parse(text).expect("Failed to parse crash report");
+        let stacktrace = &report.stacktrace[0];
+        assert_eq!(stacktrace.exception, "java.lang.IllegalAccessError");
+        assert_eq!(stacktrace.message, "class net.minecraft.class_1703 tried to access private field net.minecraft.class_1661.field_7545 (net.minecraft.class_1703 and net.minecraft.class_1661 are in unnamed module of loader 'knot' @40e6dfe1)");
+        dbg!(&report);
         let sytem_details = report.sections.get("System Details").expect("Failed to get System Details section");
         let tree = SectionTree::parse(sytem_details).expect("Failed to parse system details");
     }
