@@ -2,7 +2,7 @@ use std::io::{BufRead, ErrorKind};
 
 use thiserror::Error;
 
-use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_ENTRIES, CHECKS_HEADER, CHECKS_TEXT}, issue::Issue}, parse::crash_report::CrashReport};
+use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_CRASH_REPORT, CHECKS_ENTRIES, CHECKS_HEADER, CHECKS_TEXT}, issue::Issue}, parse::crash_report::CrashReport};
 
 mod entries;
 mod header;
@@ -66,13 +66,21 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
     }
 
     let indexed_header = IndexedLogHeader::from_index(index.clone(), &header_buffer);
-    let issues = find_issues(&indexed_header, &entries);
+    let mut issues = find_issues(&indexed_header, &entries);
 
     let mut crash_report = header_crash_report;
     for entry in entries.iter().rev().take(50) {
         if let Some(report) = CrashReport::parse(&entry.contents) {
             crash_report = Some(report);
             break;
+        }
+    }
+
+    if let Some(report) = &crash_report {
+        for crash_report_check in CHECKS_CRASH_REPORT {
+            if let Some(issue) = crash_report_check(&report) {
+                issues.push(issue);
+            }
         }
     }
 

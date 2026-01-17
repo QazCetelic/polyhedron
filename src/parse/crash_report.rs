@@ -6,10 +6,10 @@ use crate::{entries::time::LogTime, parse::stacktrace::Stacktrace};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug)]
 pub struct CrashReport {
-    time: LogTime,
-    description: String,
-    stacktrace: Vec<Stacktrace>,
-    sections: BTreeMap<String, String>
+    pub(crate) time: LogTime,
+    pub(crate) description: String,
+    pub(crate) stacktrace: Vec<Stacktrace>,
+    pub(crate) sections: BTreeMap<String, String>
 }
 
 impl CrashReport {

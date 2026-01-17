@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::issues::checks::suspected_mod::SuspectedModInfo;
+use crate::issues::checks::{entrypoint_execution_errors::EntrypointExecutionErrors, suspected_mod::SuspectedModInfo};
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Error, Debug, PartialEq, Eq)]
@@ -74,4 +74,6 @@ pub enum Issue {
     ShaderCompileError,
     #[error("Suspected mod")]
     ForgeSuspectedMod(Vec<SuspectedModInfo>),
+    #[error("Entrypoint Execution Errors")]
+    EntrypointExecutionErrors(Box<EntrypointExecutionErrors>),
 }

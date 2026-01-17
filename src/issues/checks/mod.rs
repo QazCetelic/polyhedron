@@ -1,4 +1,4 @@
-use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader, issues::{checks::intel_hd::intel_hd_entry, issue::Issue}};
+use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader, issues::{checks::intel_hd::intel_hd_entry, issue::Issue}, parse::crash_report::CrashReport};
 
 pub mod flatpak_nvidia;
 pub mod fabric_internal;
@@ -32,9 +32,10 @@ pub mod corrupted_instance;
 pub mod invalid_proxy;
 pub mod shader_compile_error;
 pub mod suspected_mod;
+pub mod entrypoint_execution_errors;
 
 #[allow(dead_code)]
-pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) -> Option<Issue>>; 4] = [
+pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) -> Option<Issue>>; 3] = [
     |_header| { 
         Box::new(|text| fabric_internal::fabric_internal(text)) 
     },
@@ -43,14 +44,17 @@ pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) ->
     },
     |_header| { 
         Box::new(|text| x11_connect_failure::x11_connect_failure(text)) 
-    },
-    |_header| { 
-        Box::new(|text| suspected_mod::check_suspected_mod_text(text)) 
-    },
+    }
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 8] = [
+pub const CHECKS_CRASH_REPORT: [fn(&CrashReport) -> Option<Issue>; 2] = [
+    suspected_mod::check_suspected_mod_crash_report,
+    entrypoint_execution_errors::entrypoint_execution_errors,
+];
+
+#[allow(dead_code)]
+pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 9] = [
     optifine::optifine_header,
     corrupted_instance::corrupted_instance,
     invalid_folder_name::invalid_folder_name_header,
@@ -59,6 +63,7 @@ pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 8]
     locked_jar::locked_jar_header,
     java_option::java_option,
     missing_libraries::missing_libraries_header,
+    outdated_launcher::outdated_launcher_header,
 ];
 
 #[allow(dead_code)]

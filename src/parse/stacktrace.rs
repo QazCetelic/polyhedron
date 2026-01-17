@@ -1,4 +1,4 @@
-use std::{f32::consts::E, str::Lines};
+use std::str::Lines;
 
 #[derive(Debug)]
 pub struct StacktraceParser {

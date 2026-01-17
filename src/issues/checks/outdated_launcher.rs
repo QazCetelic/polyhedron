@@ -1,9 +1,15 @@
-use crate::{header::identify::{LauncherInfo, LauncherVersion}, issues::issue::Issue};
+use crate::{header::{identify::{LauncherInfo, LauncherVersion}, index::IndexedLogHeader}, issues::issue::Issue};
 
 fn outdated_launcher(launcher_info: &LauncherInfo, latest_version: &str) -> Option<Issue> {
     let used_version = LauncherVersion::parse(&launcher_info.version)?;
     let latest_version = LauncherVersion::parse(latest_version)?;
     (used_version < latest_version).then_some(Issue::OutdatedLauncher)
+}
+
+pub(crate) fn outdated_launcher_header(header: &IndexedLogHeader) -> Option<Issue> {
+    const LAST_KNOWN_VERSION: &str = "10.0.0"; // I don't want it to depend on network requests so we just hardcode it
+    let launcher_info = LauncherInfo::from_first_line(header.text)?;
+    outdated_launcher(&launcher_info, LAST_KNOWN_VERSION)
 }
 
 #[cfg(test)]
