@@ -1,4 +1,4 @@
-use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader, issues::{checks::intel_hd::intel_hd_entry, issue::Issue}, parse::crash_report::CrashReport};
+use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader, issues::{checks::intel_hd::intel_hd_entry, issue::Issue}, parse::{crash_report::CrashReport, stacktrace::Stacktrace}};
 
 pub mod flatpak_nvidia;
 pub mod fabric_internal;
@@ -33,6 +33,7 @@ pub mod invalid_proxy;
 pub mod shader_compile_error;
 pub mod suspected_mod;
 pub mod entrypoint_execution_errors;
+pub mod critical_injection_failure;
 
 #[allow(dead_code)]
 pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) -> Option<Issue>>; 3] = [
@@ -51,6 +52,11 @@ pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) ->
 pub const CHECKS_CRASH_REPORT: [fn(&CrashReport) -> Option<Issue>; 2] = [
     suspected_mod::check_suspected_mod_crash_report,
     entrypoint_execution_errors::entrypoint_execution_errors,
+];
+
+#[allow(dead_code)]
+pub const CHECKS_STACKTRACE: [fn(&Stacktrace) -> Option<Issue>; 1] = [
+    critical_injection_failure::critical_injection_failure
 ];
 
 #[allow(dead_code)]

@@ -2,7 +2,7 @@ use std::io::{BufRead, ErrorKind};
 
 use thiserror::Error;
 
-use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_CRASH_REPORT, CHECKS_ENTRIES, CHECKS_HEADER, CHECKS_TEXT}, issue::Issue}, parse::crash_report::CrashReport};
+use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_CRASH_REPORT, CHECKS_ENTRIES, CHECKS_HEADER, CHECKS_STACKTRACE, CHECKS_TEXT}, issue::Issue}, parse::{crash_report::CrashReport, stacktrace::Stacktrace}};
 
 mod entries;
 mod header;
@@ -65,9 +65,6 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
         entries.push(entry);
     }
 
-    let indexed_header = IndexedLogHeader::from_index(index.clone(), &header_buffer);
-    let mut issues = find_issues(&indexed_header, &entries);
-
     let mut crash_report = header_crash_report;
     for entry in entries.iter().rev().take(75) {
         if let Some(report) = CrashReport::parse(&entry.contents) {
@@ -76,13 +73,16 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
         }
     }
 
-    if let Some(report) = &crash_report {
-        for crash_report_check in CHECKS_CRASH_REPORT {
-            if let Some(issue) = crash_report_check(&report) {
-                issues.push(issue);
-            }
+    let mut stacktraces = Vec::new();
+    for entry in entries.iter().rev().take(25) {
+        let stacktrace_iter = Stacktrace::from_lines(entry.contents.lines());
+        for stacktrace in stacktrace_iter {
+            stacktraces.push(stacktrace);
         }
     }
+
+    let indexed_header = IndexedLogHeader::from_index(index.clone(), &header_buffer);
+    let issues = find_issues(&indexed_header, &entries, crash_report.as_ref(), &stacktraces);
 
     Ok(ReadLog {
         launcher_info,
@@ -95,12 +95,28 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
     })
 }
 
-fn find_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry]) -> Vec<Issue> {
+fn find_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry], crash_report: Option<&CrashReport>, stacktraces: &[Stacktrace]) -> Vec<Issue> {
     let mut issues = Vec::new();
     
     for header_check in CHECKS_HEADER {
         if let Some(issue) = header_check(header) {
             issues.push(issue);
+        }
+    }
+
+    if let Some(report) = crash_report {
+        for crash_report_check in CHECKS_CRASH_REPORT {
+            if let Some(issue) = crash_report_check(&report) {
+                issues.push(issue);
+            }
+        }
+    }
+
+    for stacktrace in stacktraces {
+        for stacktrace_check in CHECKS_STACKTRACE  {
+            if let Some(issue) = stacktrace_check(&stacktrace) {
+                issues.push(issue);
+            }
         }
     }
 

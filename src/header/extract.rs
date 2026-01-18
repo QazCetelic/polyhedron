@@ -1,6 +1,6 @@
-use std::collections::VecDeque;
+use std::collections::{BTreeMap, VecDeque};
 
-use crate::header::index::IndexedLogHeader;
+use crate::{header::index::IndexedLogHeader, parse::normalize_mod_name::normalize_mod_name};
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct JavaVersionInfo {
@@ -205,6 +205,15 @@ impl<'a> IndexedLogHeader<'a> {
         // e.g. "Created Temporary Directory: /tmp/forge_installer2996225851521709060"
         Some(self.text.get(self.index.created_tmp_dir?..)?.lines().next()?.strip_prefix("Created Temporary Directory: ")?.trim_ascii_start())
     }
+
+    pub fn get_mod_name_lookup_map(&self) -> Option<BTreeMap<String, String>> {
+        let mods = self.get_mods()?;
+        let mut map: BTreeMap<String, String> = Default::default();
+        for m in mods {
+            map.insert(normalize_mod_name(&m.name), m.name);
+        }
+        Some(map)
+    }
 }
 
 #[cfg(test)]
@@ -239,6 +248,8 @@ mod tests {
         assert!(libraries.iter().any(|l| l.name == "C:/Users/********/AppData/Roaming/PrismLauncher/libraries/org/lwjgl/lwjgl-glfw/3.3.1/lwjgl-glfw-3.3.1.jar"));
         let mods = index.get_mods().expect("Failed to get mods");
         assert!(mods.iter().any(|m| m.name == "Patchouli-1.20.1-84.1-FORGE" && m.enabled));
+        let mod_name_lookup_map = index.get_mod_name_lookup_map().expect("Failed to get name lookup map");
+        assert!(mod_name_lookup_map.contains_key("aethervillages"));
         let params_str = index.get_params().expect("Failed to get params");
         assert!(params_str.starts_with("--username  --version 1.20.1 --gameDir"));
         let (width, height) = index.get_window_size().expect("Failed to get window size");

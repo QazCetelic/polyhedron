@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::issues::checks::{entrypoint_execution_errors::EntrypointExecutionErrors, suspected_mod::SuspectedModInfo};
+use crate::issues::checks::{critical_injection_failure::CriticalInjectionFailure, entrypoint_execution_errors::EntrypointExecutionErrors, suspected_mod::SuspectedModInfo};
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Error, Debug, PartialEq, Eq)]
@@ -76,4 +76,6 @@ pub enum Issue {
     ForgeSuspectedMod(Vec<SuspectedModInfo>),
     #[error("Entrypoint Execution Errors")]
     EntrypointExecutionErrors(Box<EntrypointExecutionErrors>),
+    #[error("Critical injection failure")]
+    CriticalInjectionFailure(Box<CriticalInjectionFailure>),
 }

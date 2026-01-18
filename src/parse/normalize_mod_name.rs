@@ -12,17 +12,17 @@ fn find_version_index(s: &str) -> Option<usize> {
 pub(crate) fn normalize_mod_name(name: &str) -> String {
     let mut name = name.to_ascii_lowercase();
 
-    fn take_left(s: &mut String, split: &str) {
+    fn split_take(s: &mut String, split: &str) {
         if let Some((n, _)) = s.split_once(split) {
             *s = n.to_string();
         }
     }
-    take_left(&mut name, "-alpha");
-    take_left(&mut name, "-beta");
-    take_left(&mut name, "-fabric");
-    take_left(&mut name, "-forge");
-    take_left(&mut name, "-quilt");
-    take_left(&mut name, "-mc");
+    split_take(&mut name, "-alpha");
+    split_take(&mut name, "-beta");
+    split_take(&mut name, "-fabric");
+    split_take(&mut name, "-forge");
+    split_take(&mut name, "-quilt");
+    split_take(&mut name, "-mc");
 
     if let Some(ver_index) = find_version_index(&name) {
         if let Some(wo_version) = name.get(..ver_index) {
@@ -84,5 +84,6 @@ mod tests {
         assert_eq!(normalize_mod_name("particle_core-0.2.6 1.21.6"), "particlecore");
         assert_eq!(normalize_mod_name("duckling-fabric-1.20.4-4.0.0"), "duckling");
         assert_eq!(normalize_mod_name("GuardRibbits-1.20.1-Forge-1.0.4.jar"), "guardribbits");
+        // assert_eq!(normalize_mod_name("[1.20.1]davesbuilds"), "davesbuilds");
     }
 }
