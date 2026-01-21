@@ -11,10 +11,10 @@ pub struct StacktraceParser {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[allow(dead_code)]
 pub struct StacktraceLine {
-    class: String,
-    method: String,
-    source: String,
-    rest: String,
+    pub(crate) class: String,
+    pub(crate) method: String,
+    pub(crate) source: String,
+    pub(crate) rest: String,
 }
 
 impl StacktraceLine {
@@ -58,7 +58,7 @@ impl StacktraceLine {
 pub struct Stacktrace {
     pub exception: String,
     pub message: String,
-    lines: Vec<StacktraceLine>,
+    pub lines: Vec<StacktraceLine>,
 }
 
 impl Stacktrace {

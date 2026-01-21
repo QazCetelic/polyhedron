@@ -2,13 +2,15 @@ fn find_version_index(s: &str) -> Option<usize> {
     let mut char_iter = s.chars().enumerate().peekable();
     while let Some((index, c)) = char_iter.next() {
         if c.is_ascii_digit() && char_iter.peek()?.1 == '.' {
-            return Some(index);
+            // TODO optimize
+            let numbers_before = s.chars().take(index).collect::<Vec<char>>().iter().rev().take_while(|c| c.is_ascii_digit()).count();
+            return Some(index - numbers_before);
         }
     }
     None
 }
 
-/// Produces strings that can be used to match mods to errors
+/// Produces strings that can be used to match mods to errors, mostly to compare to namespaces
 pub(crate) fn normalize_mod_name(name: &str) -> String {
     let mut name = name.to_ascii_lowercase();
 
@@ -23,20 +25,15 @@ pub(crate) fn normalize_mod_name(name: &str) -> String {
     split_take(&mut name, "-forge");
     split_take(&mut name, "-quilt");
     split_take(&mut name, "-mc");
+    split_take(&mut name, "-loader");
 
     if let Some(ver_index) = find_version_index(&name) {
         if let Some(wo_version) = name.get(..ver_index) {
             name = wo_version.to_string();
         }
     }
-    name = name
-        .replace('-', "")
-        .replace('_', "")
-        .replace('[', "")
-        .replace('\'', "")
-        .replace(' ', "");
 
-    name
+    name.replace(&['-', '_', '[', '\'', ' '], "")
 }
 
 #[cfg(test)]
@@ -47,6 +44,9 @@ mod tests {
     fn version_index() {
         let index = find_version_index("natures_spirit-2.2.5-1.20.1").expect("Failed to find index");
         assert_eq!(index, 15);
+        let index = find_version_index("bclib-21.0.13").expect("Failed to find index");
+        assert_eq!(index, 6);
+        assert_eq!("bclib-21.0.13".get(..index).unwrap(), "bclib-");
     }
 
     #[test]
@@ -84,6 +84,7 @@ mod tests {
         assert_eq!(normalize_mod_name("particle_core-0.2.6 1.21.6"), "particlecore");
         assert_eq!(normalize_mod_name("duckling-fabric-1.20.4-4.0.0"), "duckling");
         assert_eq!(normalize_mod_name("GuardRibbits-1.20.1-Forge-1.0.4.jar"), "guardribbits");
+        assert_eq!(normalize_mod_name("bclib-21.0.13"), "bclib");
         // assert_eq!(normalize_mod_name("[1.20.1]davesbuilds"), "davesbuilds");
     }
 }

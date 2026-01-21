@@ -34,6 +34,7 @@ pub mod shader_compile_error;
 pub mod suspected_mod;
 pub mod entrypoint_execution_errors;
 pub mod critical_injection_failure;
+pub mod mods_in_stacktrace;
 
 #[allow(dead_code)]
 pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) -> Option<Issue>>; 3] = [
@@ -49,9 +50,21 @@ pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) ->
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_CRASH_REPORT: [fn(&CrashReport) -> Option<Issue>; 2] = [
-    suspected_mod::check_suspected_mod_crash_report,
-    entrypoint_execution_errors::entrypoint_execution_errors,
+pub const CHECKS_CRASH_REPORT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&CrashReport) -> Option<Issue>>; 3] = [
+    |_header| {
+        Box::new(suspected_mod::check_suspected_mod_crash_report)
+    },
+    |_header| {
+        Box::new(entrypoint_execution_errors::entrypoint_execution_errors)
+    },
+     |header| {
+        if let Some(mod_lookup_map) = header.get_mod_name_lookup_map() {
+            Box::new(move |report| { mods_in_stacktrace::check_mods_in_stacktrace(&mod_lookup_map, report) })
+        }
+        else {
+            Box::new(|_report| { None })
+        }
+    },
 ];
 
 #[allow(dead_code)]

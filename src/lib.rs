@@ -25,7 +25,7 @@ pub struct ReadLog {
     pub header_index: LogHeaderIndex,
     pub entries: Vec<LogEntry>,
     pub issues: Vec<Issue>,
-    pub crash_report: Option<CrashReport>
+    pub crash_report: Option<CrashReport>,
 }
 
 pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
@@ -95,6 +95,20 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
     })
 }
 
+pub fn find_exception_locations<R: BufRead>(mut reader: R) -> Option<Vec<String>> {
+    let mut text = String::new();
+    reader.read_to_string(&mut text).ok()?;
+    let stacktraces = Stacktrace::from_lines(text.lines());
+    let lines = stacktraces
+        .map(|s| s.lines)
+        .flatten()
+        .filter_map(|l| l.get_relative_path())
+        .map(|(path, line)| format!("{path}:{line}"))
+        .collect::<Vec<String>>();
+
+    Some(lines)
+}
+
 fn find_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry], crash_report: Option<&CrashReport>, stacktraces: &[Stacktrace]) -> Vec<Issue> {
     let mut issues = Vec::new();
     
@@ -105,7 +119,8 @@ fn find_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry], crash_report
     }
 
     if let Some(report) = crash_report {
-        for crash_report_check in CHECKS_CRASH_REPORT {
+        for build_crash_report_check in CHECKS_CRASH_REPORT {
+            let crash_report_check = build_crash_report_check(header);
             if let Some(issue) = crash_report_check(&report) {
                 issues.push(issue);
             }

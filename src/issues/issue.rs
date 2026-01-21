@@ -1,3 +1,6 @@
+use core::error;
+use std::collections::BTreeSet;
+
 use thiserror::Error;
 
 use crate::issues::checks::{critical_injection_failure::CriticalInjectionFailure, entrypoint_execution_errors::EntrypointExecutionErrors, suspected_mod::SuspectedModInfo};
@@ -78,4 +81,6 @@ pub enum Issue {
     EntrypointExecutionErrors(Box<EntrypointExecutionErrors>),
     #[error("Critical injection failure")]
     CriticalInjectionFailure(Box<CriticalInjectionFailure>),
+    #[error("Found mods in stacktrace")]
+    ModsFoundInStacktrace(BTreeSet<String>)
 }

@@ -210,7 +210,9 @@ impl<'a> IndexedLogHeader<'a> {
         let mods = self.get_mods()?;
         let mut map: BTreeMap<String, String> = Default::default();
         for m in mods {
-            map.insert(normalize_mod_name(&m.name), m.name);
+            if m.enabled {
+                map.insert(normalize_mod_name(&m.name), m.name);
+            }
         }
         Some(map)
     }
