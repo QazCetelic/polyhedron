@@ -25,6 +25,7 @@ pub struct ReadLog {
     pub header_index: LogHeaderIndex,
     pub entries: Vec<LogEntry>,
     pub issues: Vec<Issue>,
+    pub stacktraces: Vec<Stacktrace>,
     pub crash_report: Option<CrashReport>,
 }
 
@@ -91,6 +92,7 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
         header_index: index,
         entries,
         issues,
+        stacktraces,
         crash_report,
     })
 }

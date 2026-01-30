@@ -178,10 +178,11 @@ impl StacktraceParser {
         else {
             let exception = self.exception.take();
             let message = self.message.take();
+            let stripped_msg = message.map(|s| if let Some(msg) = s.strip_suffix("Stacktrace:") { msg.trim_ascii_end().to_string() } else { s } );
             let lines = std::mem::take(&mut self.lines);
             let trace = Stacktrace {
                 exception: exception?,
-                message: message?,
+                message: stripped_msg?,
                 lines,
             };
             self.lines = Vec::new();
@@ -363,5 +364,36 @@ Caused by: java.lang.IncompatibleClassChangeError: class betteradvancements.comm
         assert_eq!(trace_2.lines[5].method, "loadClass");
         assert_eq!(trace_2.lines[8].source, "ConfigFileHandler.java:70");
         assert_eq!(trace_2.lines[10].class, "net.fabricmc.loader.impl.FabricLoaderImpl");
+    }
+
+    #[test]
+    fn strips_message() {
+        let text = "
+        	Mod file: /Users/********/Library/Application Support/PrismLauncher/instances/1.21.1(1)/minecraft/mods/create-1.21.1-6.0.9.jar
+	Failure message: Create (create) has failed to load correctly
+		org.spongepowered.asm.mixin.transformer.throwables.MixinTransformerError: An unexpected critical error was encountered
+	Mod version: 6.0.9
+	Mod issues URL: https://github.com/Creators-of-Create/Create/issues
+	Exception message: org.spongepowered.asm.mixin.transformer.throwables.InvalidMixinException: @Shadow field simplifiedEntityColliders was not located in the target class com.simibubi.create.content.contraptions.Contraption. No refMap loaded.
+Stacktrace:
+	at MC-BOOTSTRAP/org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer.MixinPreProcessorStandard.attachFields(MixinPreProcessorStandard.java:624) ~[sponge-mixin-0.15.2+mixin.0.8.7.jar%23161!/:0.15.2+mixin.0.8.7] {}
+	at MC-BOOTSTRAP/org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer.MixinPreProcessorStandard.attach(MixinPreProcessorStandard.java:302) ~[sponge-mixin-0.15.2+mixin.0.8.7.jar%23161!/:0.15.2+mixin.0.8.7] {}
+	at MC-BOOTSTRAP/org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer.MixinPreProcessorStandard.createContextFor(MixinPreProcessorStandard.java:277) ~[sponge-mixin-0.15.2+mixin.0.8.7.jar%23161!/:0.15.2+mixin.0.8.7] {}
+	at MC-BOOTSTRAP/org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer.MixinInfo.createContextFor(MixinInfo.java:1288) ~[sponge-mixin-0.15.2+mixin.0.8.7.jar%23161!/:0.15.2+mixin.0.8.7] {}
+	at MC-BOOTSTRAP/org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer.MixinApplicatorStandard.apply(MixinApplicatorStandard.java:203) ~[sponge-mixin-0.15.2+mixin.0.8.7.jar%23161!/:0.15.2+mixin.0.8.7] {}
+	at MC-BOOTSTRAP/org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer.TargetClassContext.apply(TargetClassContext.java:437) ~[sponge-mixin-0.15.2+mixin.0.8.7.jar%23161!/:0.15.2+mixin.0.8.7] {}
+	at MC-BOOTSTRAP/org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer.TargetClassContext.applyMixins(TargetClassContext.java:418) ~[sponge-mixin-0.15.2+mixin.0.8.7.jar%23161!/:0.15.2+mixin.0.8.7] {}
+	at MC-BOOTSTRAP/org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer.MixinProcessor.applyMixins(MixinProcessor.java:363) ~[sponge-mixin-0.15.2+mixin.0.8.7.jar%23161!/:0.15.2+mixin.0.8.7] {}
+	at MC-BOOTSTRAP/org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer.MixinTransformer.transformClass(MixinTransformer.java:250) ~[sponge-mixin-0.15.2+mixin.0.8.7.jar%23161!/:0.15.2+mixin.0.8.7] {}
+	at TRANSFORMER/libjf_unsafe_v0@3.17.4+forge/io.gitlab.jfronny.libjf.unsafe.asm.AsmTransformer.transformClass(AsmTransformer.java:127) ~[libjf-unsafe-v0-3.17.4+forge.jar%23604!/:?] {re:classloading}
+	at MC-BOOTSTRAP/org.spongepowered.mixin/org.spongepowered.asm.service.modlauncher.MixinTransformationHandler.processClass(MixinTransformationHandler.java:131) ~[sponge-mixin-0.15.2+mixin.0.8.7.jar:0.15.2+mixin.0.8.7] {}
+	at MC-BOOTSTRAP/org.spongepowered.mixin/org.spongepowered.asm.launch.MixinLaunchPluginLegacy.processClass(MixinLaunchPluginLegacy.java:131) ~[sponge-mixin-0.15.2+mixin.0.8.7.jar:0.15.2+mixin.0.8.7] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.5/cpw.mods.modlauncher.serviceapi.ILaunchPluginService.processClassWithFlags(ILaunchPluginService.java:156) ~[modlauncher-11.0.5.jar:11.0.5+main.901c6ea8] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.5/cpw.mods.modlauncher.LaunchPluginHandler.offerClassNodeToPlugins(LaunchPluginHandler.java:94) ~[modlauncher-11.0.5.jar:?] {}
+";
+        let lines = text.lines();
+        let mut traces = Stacktrace::from_lines(lines);
+        let trace = traces.next().expect("Failed to get trace");
+        assert_eq!(trace.message, "@Shadow field simplifiedEntityColliders was not located in the target class com.simibubi.create.content.contraptions.Contraption. No refMap loaded.")
     }
 }
