@@ -3,10 +3,10 @@ use crate::{issues::issue::Issue, parse::crash_report::CrashReport};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SuspectedModInfo {
-    mod_name: String,
-    mod_name_normalized: String,
-    mod_version: String,
-    issue_tracker: Option<String>,
+    pub mod_name: String,
+    pub mod_name_normalized: String,
+    pub mod_version: String,
+    pub issue_tracker: Option<String>,
 }
 
 fn find_issue_tracker_url(text: &str, index: usize) -> Option<&str> {
