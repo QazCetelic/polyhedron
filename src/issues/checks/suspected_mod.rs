@@ -1,7 +1,7 @@
 use crate::{issues::issue::Issue, parse::crash_report::CrashReport};
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SuspectedModInfo {
     mod_name: String,
     mod_name_normalized: String,

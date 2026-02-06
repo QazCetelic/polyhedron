@@ -3,7 +3,7 @@ use std::str::Lines;
 use crate::entries::{parser::LogEntryParser, prefix::LogPrefix};
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct LogEntry {
     pub prefix: LogPrefix,
     pub contents: String,

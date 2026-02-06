@@ -6,7 +6,7 @@ use thiserror::Error;
 use crate::issues::checks::{critical_injection_failure::CriticalInjectionFailure, entrypoint_execution_errors::EntrypointExecutionErrors, suspected_mod::SuspectedModInfo};
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Error, Debug, PartialEq, Eq)]
+#[derive(Error, Debug, PartialEq, Eq, Clone)]
 pub enum Issue {
     #[error("Flatpak Nvidia driver is outdated")]
     OutdatedFlatpakNvidiaDriver,

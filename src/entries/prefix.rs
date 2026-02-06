@@ -2,7 +2,7 @@ use crate::{entries::time::LogTime, parse::stacktrace::is_valid_classname};
 
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct LogPrefix {
     /// Timestamp of the log entry, optionally including date and milliseconds
     pub time: LogTime,

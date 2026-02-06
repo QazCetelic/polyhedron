@@ -7,14 +7,14 @@ pub struct StacktraceParser {
     lines: Vec<StacktraceLine>,
 }
 
-#[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[allow(dead_code)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct StacktraceLine {
-    pub(crate) class: String,
-    pub(crate) method: String,
-    pub(crate) source: String,
-    pub(crate) rest: String,
+    pub class: String,
+    pub method: String,
+    pub source: String,
+    pub rest: String,
 }
 
 impl StacktraceLine {

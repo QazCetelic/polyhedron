@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct LogDate {
     pub day: u8,
     pub month: u8,
@@ -9,7 +9,7 @@ pub struct LogDate {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct LogTime {
     pub date: Option<LogDate>,
     pub hour: u8,

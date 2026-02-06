@@ -1,6 +1,6 @@
 use crate::{issues::issue::Issue, parse::crash_report::CrashReport};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct EntrypointExecutionErrors {
     pub method: String,
