@@ -1,3 +1,4 @@
+#[derive(Clone, PartialEq, PartialOrd, Debug)]
 pub enum LogLevel {
     INFO,
     WARNING,
