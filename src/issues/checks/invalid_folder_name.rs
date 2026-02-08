@@ -1,7 +1,7 @@
 use crate::{header::index::IndexedLogHeader, issues::issue::Issue};
 
 fn invalid_folder_name(folder: &str) -> Option<Issue> {
-    folder.contains('!').then_some(Issue::InvalidFolderName)
+    folder.contains('!').then_some(Issue::InvalidFolderName('!'))
 }
 
 pub(crate) fn invalid_folder_name_header(header: &IndexedLogHeader<'_>) -> Option<Issue> {
@@ -51,7 +51,7 @@ Main Class:
         let indexed = IndexedLogHeader::index_header(header_fragment);
         let folder = indexed.get_mc_folder_location().expect("Failed to get mc folder");
         let issue = invalid_folder_name(&folder).expect("Failed to determine issue");
-        assert_eq!(issue, Issue::InvalidFolderName);
+        assert_eq!(issue, Issue::InvalidFolderName('!'));
     }
 
     #[test]

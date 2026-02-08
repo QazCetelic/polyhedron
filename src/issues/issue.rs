@@ -1,4 +1,3 @@
-use core::error;
 use std::collections::BTreeSet;
 
 use thiserror::Error;
@@ -68,7 +67,7 @@ pub enum Issue {
     #[error("xrandr missing on Minecraft versions that use LWJGL 2")]
     MissingXrandr,
     #[error("Invalid folder name")]
-    InvalidFolderName,
+    InvalidFolderName(char),
     #[error("Corrupted instance files")]
     InstanceDataCorrupted,
     #[error("Invalid proxy configuration")]
