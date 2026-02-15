@@ -5,6 +5,7 @@ edition = "2024"
 
 [features]
 serde = ["dep:serde"]
+dioxius = []
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"], optional = true }

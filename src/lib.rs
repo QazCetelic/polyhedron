@@ -5,7 +5,7 @@ use thiserror::Error;
 use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_CRASH_REPORT, CHECKS_ENTRIES, CHECKS_HEADER, CHECKS_STACKTRACE, CHECKS_TEXT}, issue::Issue}, parse::{crash_report::CrashReport, stacktrace::Stacktrace}};
 
 pub mod entries;
-mod header;
+pub mod header;
 pub mod issues;
 pub mod parse;
 

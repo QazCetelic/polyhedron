@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, VecDeque};
 use crate::{header::index::IndexedLogHeader, parse::normalize_mod_name::normalize_mod_name};
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "dioxius", derive(Clone, PartialEq))]
 pub struct JavaVersionInfo {
     pub version: String,
     pub architecture: String,
@@ -10,12 +11,14 @@ pub struct JavaVersionInfo {
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "dioxius", derive(Clone, PartialEq))]
 pub struct ModInfo {
     pub name: String,
     pub enabled: bool,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "dioxius", derive(Clone, PartialEq))]
 pub struct LibraryInfo {
     pub name: String,
     pub missing: bool,
