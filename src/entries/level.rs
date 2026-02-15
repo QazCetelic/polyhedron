@@ -19,7 +19,7 @@ impl LogLevel {
         else if s.eq_ignore_ascii_case("ERROR") {
             Some(LogLevel::ERROR)
         }
-        else if s.eq_ignore_ascii_case("FATAL") || s.eq_ignore_ascii_case("CRITICAL") {
+        else if s.eq_ignore_ascii_case("FATAL") || s.eq_ignore_ascii_case("CRITICAL") || s.eq_ignore_ascii_case("SEVERE") {
             Some(LogLevel::FATAL)
         }
         else {
