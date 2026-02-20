@@ -4,6 +4,7 @@ use crate::{entries::time::LogTime, parse::stacktrace::Stacktrace};
 
 #[allow(dead_code)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "dioxius", derive(Clone, PartialEq))]
 #[derive(Debug)]
 pub struct CrashReport {
     pub time: LogTime,

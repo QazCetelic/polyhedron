@@ -55,6 +55,7 @@ impl StacktraceLine {
 
 #[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "dioxius", derive(Clone, PartialEq))]
 pub struct Stacktrace {
     pub exception: String,
     pub message: String,
