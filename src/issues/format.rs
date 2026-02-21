@@ -173,5 +173,11 @@ pub fn format_issue(issue: &Issue) -> FormattedIssueInfo {
                 description: format!("The following mods were found in the error's stacktrace: {}", mods),
             }
         },
+        Issue::MixinApplyFailure(mod_name) => {
+            FormattedIssueInfo {
+                title: "Failed to apply mixin for mod".to_string(),
+                description: format!("Mixin apply for mod {} failed", mod_name),
+            }
+        },
     }
 }

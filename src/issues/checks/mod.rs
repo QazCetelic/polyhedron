@@ -1,4 +1,4 @@
-use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader, issues::{checks::intel_hd::intel_hd_entry, issue::Issue}, parse::{crash_report::CrashReport, stacktrace::Stacktrace}};
+use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader, issues::{checks::{intel_hd::intel_hd_entry, mixin_apply_failure::mixin_apply_failure}, issue::Issue}, parse::{crash_report::CrashReport, stacktrace::Stacktrace}};
 
 pub mod flatpak_nvidia;
 pub mod fabric_internal;
@@ -35,6 +35,7 @@ pub mod suspected_mod;
 pub mod entrypoint_execution_errors;
 pub mod critical_injection_failure;
 pub mod mods_in_stacktrace;
+pub mod mixin_apply_failure;
 
 #[allow(dead_code)]
 pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) -> Option<Issue>>; 3] = [
@@ -86,7 +87,7 @@ pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 9]
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&LogEntry) -> Option<Issue>>; 20] = [
+pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&LogEntry) -> Option<Issue>>; 21] = [
     |header| {
         let java_version = header.get_java_version();
         Box::new(move |entry| intel_hd_entry(entry, java_version.as_ref()))
@@ -120,6 +121,9 @@ pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&
     },
     |_header| { 
         Box::new(|entry| missing_xrandr::missing_xrandr(entry)) 
+    },
+    |_header| { 
+        Box::new(|entry| mixin_apply_failure::mixin_apply_failure(entry)) 
     },
     |_header| { 
         Box::new(|entry| native_transport::pre_1_12_native_transport_java_9(entry)) 

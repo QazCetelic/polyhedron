@@ -1,3 +1,4 @@
+use core::error;
 use std::collections::BTreeSet;
 
 use thiserror::Error;
@@ -81,5 +82,7 @@ pub enum Issue {
     #[error("Critical injection failure")]
     CriticalInjectionFailure(Box<CriticalInjectionFailure>),
     #[error("Found mods in stacktrace")]
-    ModsFoundInStacktrace(BTreeSet<String>)
+    ModsFoundInStacktrace(BTreeSet<String>),
+    #[error("Mixin apply for mod failed")]
+    MixinApplyFailure(String),
 }
