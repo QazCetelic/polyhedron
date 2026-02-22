@@ -1,9 +1,6 @@
-use core::error;
 use std::collections::BTreeSet;
-
 use thiserror::Error;
-
-use crate::issues::checks::{critical_injection_failure::CriticalInjectionFailure, entrypoint_execution_errors::EntrypointExecutionErrors, suspected_mod::SuspectedModInfo};
+use crate::{issues::checks::{critical_injection_failure::CriticalInjectionFailure, entrypoint_execution_errors::EntrypointExecutionErrors, suspected_mod::SuspectedModInfo}, parse::jre_fatal::JreFatalError};
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Error, Debug, PartialEq, Eq, Clone)]
@@ -85,4 +82,6 @@ pub enum Issue {
     ModsFoundInStacktrace(BTreeSet<String>),
     #[error("Mixin apply for mod failed")]
     MixinApplyFailure(String),
+    #[error("Java Runtime Environment had a fatal error")]
+    FatalErrorJre(Box<JreFatalError>),
 }

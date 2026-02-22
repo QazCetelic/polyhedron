@@ -2,7 +2,7 @@ use std::io::{BufRead, ErrorKind};
 
 use thiserror::Error;
 
-use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_CRASH_REPORT, CHECKS_ENTRIES, CHECKS_HEADER, CHECKS_STACKTRACE, CHECKS_TEXT}, issue::Issue}, parse::{crash_report::CrashReport, stacktrace::Stacktrace}};
+use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_CRASH_REPORT, CHECKS_ENTRIES, CHECKS_HEADER, CHECKS_STACKTRACE, CHECKS_TEXT}, issue::Issue}, parse::{crash_report::CrashReport, jre_fatal::JreFatalError, stacktrace::Stacktrace}};
 
 pub mod entries;
 pub mod header;
@@ -27,6 +27,7 @@ pub struct ReadLog {
     pub issues: Vec<Issue>,
     pub stacktraces: Vec<Stacktrace>,
     pub crash_report: Option<CrashReport>,
+    pub jre_fatal_error: Option<JreFatalError>,
 }
 
 pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
@@ -83,7 +84,16 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
     }
 
     let indexed_header = IndexedLogHeader::from_index(index.clone(), &header_buffer);
-    let issues = find_issues(&indexed_header, &entries, crash_report.as_ref(), &stacktraces);
+    let mut issues = find_issues(&indexed_header, &entries, crash_report.as_ref(), &stacktraces);
+
+    let mut jre_fatal_error: Option<JreFatalError> = None;
+    for entry in entries.iter().rev().take(3) { // We don't check that far because this should always be at the bottom
+        if let Some(report) = JreFatalError::parse(&entry.contents) {
+            jre_fatal_error = Some(report.clone());
+            issues.push(Issue::FatalErrorJre(Box::new(report)));
+            break;
+        }
+    }
 
     Ok(ReadLog {
         launcher_info,
@@ -94,6 +104,7 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
         issues,
         stacktraces,
         crash_report,
+        jre_fatal_error,
     })
 }
 
