@@ -68,6 +68,9 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
     }
 
     let mut crash_report = header_crash_report;
+    if let Some(report) = CrashReport::parse(&header_buffer) {
+        crash_report = Some(report);
+    }
     for entry in entries.iter().rev().take(75) {
         if let Some(report) = CrashReport::parse(&entry.contents) {
             crash_report = Some(report);
@@ -76,6 +79,10 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
     }
 
     let mut stacktraces = Vec::new();
+    let stacktrace_iter = Stacktrace::from_lines(header_buffer.lines());
+    for stacktrace in stacktrace_iter {
+        stacktraces.push(stacktrace);
+    }
     for entry in entries.iter().rev().take(25) {
         let stacktrace_iter = Stacktrace::from_lines(entry.contents.lines());
         for stacktrace in stacktrace_iter {
@@ -87,6 +94,10 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
     let mut issues = find_issues(&indexed_header, &entries, crash_report.as_ref(), &stacktraces);
 
     let mut jre_fatal_error: Option<JreFatalError> = None;
+    if let Some(report) = JreFatalError::parse(&header_buffer) {
+        jre_fatal_error = Some(report.clone());
+        issues.push(Issue::FatalErrorJre(Box::new(report)));
+    }
     for entry in entries.iter().rev().take(3) { // We don't check that far because this should always be at the bottom
         if let Some(report) = JreFatalError::parse(&entry.contents) {
             jre_fatal_error = Some(report.clone());
