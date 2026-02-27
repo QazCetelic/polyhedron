@@ -5,3 +5,4 @@ pub mod section_tree;
 pub mod normalize_mod_name;
 pub mod extra_trace_info;
 pub mod jre_fatal;
+pub mod exit_code;

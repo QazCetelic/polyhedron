@@ -1,0 +1,92 @@
+ar	توقفت العملية برمز الخروج 	.
+ar	فشلت العملية مع رمز الخطأ 	.
+be	Працэс завяршыўся з кодам 	.
+be	Працэс нечакана спыніўся з кодам 	.
+ca	El procés ha sortit amb el codi 	.
+ca	El procés ha caigut amb el codi d'eixida 	.
+cs	Hra skončila s chybovým kódem 	.
+cs	Hra spadla s chybovým kódem 	.
+da	Processen sluttede med kode 	.
+da	Processen crashede med slutkode 	.
+de	Der Prozess wurde mit Status 	 beendet.
+de	Der Prozess ist mit dem Status 	 abgestürzt.
+de	Der Prozess wurde mit Status 	 beendet.
+de	Das Programm ist mit dem Status 	 abgestürzt.
+el	Η διεργασία τερμάτισε με κωδικό 	.
+el	Η διεργασία κατέρρευσε με κωδικό 	.
+en@pirate	Voyage ended with code 	.
+en@pirate	Process sunk with exitcode 	.
+en@uwu	Pwocess exited with code 	.
+en@uwu	Pwocess cwashed with exitcode 	.
+en	Process exited with code 	.
+en	Process crashed with exitcode 	.
+es	El proceso se cerró con el código 	.
+es	El proceso ha terminado de forma inesperada con el código: 	.
+es	El proceso se cerró con el código 	.
+es	El proceso terminó de forma inesperada con el código: 	.
+et	Protsess väljus koodiga 	.
+et	Protsess jooksis kokku väljumiskoodiga 	.
+fa	پردازش با کد 	 خارج شد.
+fa	پردازش خراب شد با کد خروج 	.
+fi	Prosessi sulkeutui koodilla 	.
+fi	Prosessi kaatui poistumiskoodilla 	.
+fil	Nag-exit ang process na may code na 	.
+fil	Nag-crash ang process na may exitcode na 	.
+fr	Le processus s'est arrêté avec le code de sortie 	.
+fr	Le processus a cessé de fonctionner avec le code de sortie 	.
+fr	Le process est sorti avec un code 	.
+fr	Le processus à planté avec le code de sortie 	.
+fur	Il procès al è jessût cul codiç 	.
+fur	Il procès al è colassât cul codiç di jessude 	.
+ga	Próiseas scortha le cód 	.
+ga	Thuairteáil an próiseas leis an gcód scoir 	.
+gl	Proceso terminado co código 	.
+gl	O proceso quebrou co código 	.
+hu	A folyamat kilépett 	 kóddal.
+hu	Folyamat összeomlott 	 kilépési kóddal.
+id	Proses keluar dengan kode 	.
+id	Proses gagal dengan kode keluar 	.
+it	Il processo si è chiuso con codice 	.
+it	Il processo si è chiuso improvvisamente con codice 	.
+ja	Minecraftは終了コード 	 で終了しました。
+ja	Minecraftは終了コード 	 でクラッシュしました。
+ja	程務は終了戻り値 	 で終了しました。
+ja	程務は終了戻り値 	 で崩れた。
+ko	마인크래프트가 종료 코드 	와(과) 함께 종료했습니다.
+ko	프로세스가 종료 코드 	와(과) 함께 충돌했습니다.
+lv	Process beidzās ar kodu 	.
+lv	Process beidzās ar kodu 	.
+ms	Proses keluar dengan kod 	.
+ms	Proses ranap dengan kod keluar 	.
+nb	Prosessen avsluttet med koden 	.
+nb	Prosessen krasjet med avslutningskoden 	.
+nl	Proces is afgesloten met code 	.
+nl	Proces is gecrasht met code 	.
+nn	Prosessen avslutta med sluttkode 	.
+nn	Prosessen krasja med sluttkode 	.
+pl	Proces zakończył z kodem 	.
+pl	Proces został nieoczekiwanie zamknięty z kodem wyjściowym 	.
+pt	O processo foi encerrado com o código 	.
+pt	O processo bloqueou com o código 	.
+pt	O processo foi encerrado com o código 	.
+pt	O processo parou de funcionar com o código 	.
+ro	Procesul a ieșit cu codul 	.
+ro	Procesul s-a oprit cu codul de ieșire 	.
+ru	Процесс завершился с кодом 	.
+ru	Аварийное завершение процесса с кодом завершения 	.
+sk	Proces ukončený kódom 	.
+sk	Proces spadol s výstupovým kódom 	.
+sv	Programmet avslutades med koden 	.
+sv	Programmet kraschade med koden 	.
+ta	குறியீடு 	 உடன் வெளியேறும் செயல்முறை.
+ta	எக்சிட் கோட் 	 உடன் செயல்முறை செயலிழந்தது.
+tr	İşlem şu kod ile bitti: 	.
+tr	İşlem şu hata koduyla çöktü: 	.
+uk	Процес завершився з кодом 	.
+uk	Процес зазнав краху з кодом 	.
+vi	Tiến trình thoát với mã 	.
+vi	Tiến trình bị hỏng với mã lỗi 	.
+zh	进程退出，代码：	。
+zh	游戏进程崩溃了。退出代码：	。
+zh	處理程序已結束，代碼：	。
+zh	處理程序已崩潰，結束代碼：	。

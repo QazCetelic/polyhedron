@@ -1,1 +1,2 @@
 *.log filter=lfs diff=lfs merge=lfs -text
+exit_code_matchings filter=lfs diff=lfs merge=lfs -text

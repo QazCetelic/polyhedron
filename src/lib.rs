@@ -2,7 +2,7 @@ use std::io::{BufRead, ErrorKind};
 
 use thiserror::Error;
 
-use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_CRASH_REPORT, CHECKS_ENTRIES, CHECKS_HEADER, CHECKS_STACKTRACE, CHECKS_TEXT}, issue::Issue}, parse::{crash_report::CrashReport, jre_fatal::JreFatalError, stacktrace::Stacktrace}};
+use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_CRASH_REPORT, CHECKS_ENTRIES, CHECKS_HEADER, CHECKS_STACKTRACE, CHECKS_TEXT}, issue::Issue}, parse::{crash_report::CrashReport, exit_code::extract_exit_code, jre_fatal::JreFatalError, stacktrace::Stacktrace}};
 
 pub mod entries;
 pub mod header;
@@ -28,6 +28,8 @@ pub struct ReadLog {
     pub stacktraces: Vec<Stacktrace>,
     pub crash_report: Option<CrashReport>,
     pub jre_fatal_error: Option<JreFatalError>,
+    pub localization: Option<String>,
+    pub exit_code: Option<i32>,
 }
 
 pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
@@ -106,6 +108,8 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
         }
     }
 
+    let exit_code = entries.last().map(|e| extract_exit_code(&e.contents)).unwrap_or_else(|| extract_exit_code(&header_buffer));
+
     Ok(ReadLog {
         launcher_info,
         header: header_buffer,
@@ -116,6 +120,8 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
         stacktraces,
         crash_report,
         jre_fatal_error,
+        localization: exit_code.map(|(lang, _code)| lang.to_string()),
+        exit_code: exit_code.map(|(_lang, code)| code),
     })
 }
 
