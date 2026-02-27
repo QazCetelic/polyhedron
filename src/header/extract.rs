@@ -254,7 +254,7 @@ mod tests {
         let mods = index.get_mods().expect("Failed to get mods");
         assert!(mods.iter().any(|m| m.name == "Patchouli-1.20.1-84.1-FORGE" && m.enabled));
         let mod_name_lookup_map = index.get_mod_name_lookup_map().expect("Failed to get name lookup map");
-        assert!(mod_name_lookup_map.contains_key("aethervillages"));
+        assert!(mod_name_lookup_map.contains_key("apothicattributes"));
         let params_str = index.get_params().expect("Failed to get params");
         assert!(params_str.starts_with("--username  --version 1.20.1 --gameDir"));
         let (width, height) = index.get_window_size().expect("Failed to get window size");

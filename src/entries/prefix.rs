@@ -53,12 +53,12 @@ fn parse_iso_no_brackets(line: &str) -> Option<(LogPrefix, &str)> {
 // "[17:26:36.877] [main/INFO] [loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file..."
 fn parse_with_brackets(line: &str) -> Option<(LogPrefix, &str)> {
     let line = line.strip_prefix('[')?;
-    let (time_str, rest) = line.split_once("] [")?;
+    let (time_str, rest) = line.split_once("] [")?; // {"16:20:50", "Client thread/INFO]: LWJGL Version: 2.9.4"}
     let time = LogTime::parse(time_str)?; // "16:20:50"
-    let (thread_level_context_str, rest_of_line) = rest.split_once("]: ")?;
+    let (thread_level_context_str, rest_of_line) = rest.split_once("]: ")?; // {"Client thread/INFO", "LWJGL Version: 2.9.4"}
     let (thread_level_str, context_str_opt, msg) = if let Some((before, after)) = thread_level_context_str.rsplit_once("] [") {
         (before, Some(after), rest_of_line)
-    } else if let Some((context, rest_of_line)) = rest_of_line.strip_prefix('[').map(|l| l.split_once("]: ")).flatten() && is_valid_classname(context) {
+    } else if let Some((context, rest_of_line)) = rest_of_line.strip_prefix('[').map(|l| l.split_once("]: ")).flatten() {
         (thread_level_context_str, Some(context), rest_of_line)
     } else {
         (thread_level_context_str, None, rest_of_line)
@@ -254,5 +254,15 @@ mod tests {
         assert_eq!(prefix.level, "INFO");
         assert_eq!(prefix.context, Some("me.cx.vy.cn.cg.Serialization".to_string()));
         assert_eq!(rest, r#"Registered Config as Redis for config type StorageConfig"#);
+    }
+
+    #[test]
+    fn test_other_context_format_2() {
+        let line = "[18:40:50] [Render thread/INFO]: [STDERR]: 	at knot//net.diebuddies.physics.ragdoll.Ragdoll.addConnection(Ragdoll.java:94)";
+        let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix with other context format");
+        assert_eq!(format!("{}", prefix.time), "18:40:50");
+        assert_eq!(prefix.level, "INFO");
+        assert_eq!(prefix.context, Some("STDERR".to_string()));
+        assert_eq!(rest, "\tat knot//net.diebuddies.physics.ragdoll.Ragdoll.addConnection(Ragdoll.java:94)");
     }
 }
