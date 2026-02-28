@@ -58,7 +58,9 @@ fn parse_with_brackets(line: &str) -> Option<(LogPrefix, &str)> {
     let (thread_level_context_str, rest_of_line) = rest.split_once("]: ")?; // {"Client thread/INFO", "LWJGL Version: 2.9.4"}
     let (thread_level_str, context_str_opt, msg) = if let Some((before, after)) = thread_level_context_str.rsplit_once("] [") {
         (before, Some(after), rest_of_line)
-    } else if let Some((context, rest_of_line)) = rest_of_line.strip_prefix('[').map(|l| l.split_once("]: ")).flatten() {
+    } else if let Some((context, rest_of_line)) = rest_of_line.strip_prefix('[').map(|l| l.split_once("]: ")).flatten() && context.chars().all(|c| c != ']') { // "[18:40:50] [Render thread/INFO]: [STDERR]: …"
+        (thread_level_context_str, Some(context), rest_of_line)
+    } else if let Some((context, rest_of_line)) = rest_of_line.strip_prefix('[').map(|l| l.split_once("] ")).flatten() && context.chars().all(|c| c != ']') { // "[20:28:57] [Render thread/INFO]: [do_a_barrel_roll] …"
         (thread_level_context_str, Some(context), rest_of_line)
     } else {
         (thread_level_context_str, None, rest_of_line)
@@ -264,5 +266,15 @@ mod tests {
         assert_eq!(prefix.level, "INFO");
         assert_eq!(prefix.context, Some("STDERR".to_string()));
         assert_eq!(rest, "\tat knot//net.diebuddies.physics.ragdoll.Ragdoll.addConnection(Ragdoll.java:94)");
+    }
+
+    #[test]
+    fn test_other_context_format_3() {
+        let line = "[20:28:57] [Render thread/INFO]: [do_a_barrel_roll] Received config from server";
+        let (prefix, rest) = LogPrefix::parse(line).expect("Failed to parse prefix with other context format");
+        assert_eq!(format!("{}", prefix.time), "20:28:57");
+        assert_eq!(prefix.level, "INFO");
+        assert_eq!(prefix.context, Some("do_a_barrel_roll".to_string()));
+        assert_eq!(rest, "Received config from server");
     }
 }
