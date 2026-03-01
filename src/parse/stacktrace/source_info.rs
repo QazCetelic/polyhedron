@@ -6,18 +6,18 @@ use crate::parse::stacktrace::model::StacktraceLine;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "dioxius", derive(Clone, PartialEq))]
 pub struct JarPosition {
-    position: usize,
-    char: char,
+    pub(crate) position: usize,
+    pub(crate) char: char,
 }
 
 #[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "dioxius", derive(Clone, PartialEq))]
 pub struct StacktraceLineSourceInfo {
-    jar_name: String,
-    jar_position: Option<JarPosition>,
-    version: Option<String>,
-    entries: Vec<String>,
+    pub(crate) source_name: String, // Can end with .jar or .java
+    pub(crate) jar_position: Option<JarPosition>,
+    pub(crate) version: Option<String>,
+    pub(crate) entries: Vec<String>,
 }
 
 impl StacktraceLine {
@@ -47,7 +47,7 @@ fn parse_trace_source_info(s: &str) -> Option<StacktraceLineSourceInfo> {
     let entries: Vec<String> = if let Some(vec) = entries { vec.iter().map(|e| e.to_string()).collect() } else { vec![] };
 
     Some(StacktraceLineSourceInfo {
-        jar_name: jar.to_string(),
+        source_name: jar.to_string(),
         jar_position: jar_position,
         version: version.map(|s| s.to_string()),
         entries: entries,
@@ -127,7 +127,7 @@ mod tests {
     fn extract_jar() {
         let text = "~[unusual_delight-4.4.jar#375!/:?] {re:classloading}";
         let info = parse_trace_source_info(text).expect("Failed to parse");
-        assert_eq!(info.jar_name, "unusual_delight-4.4.jar");
+        assert_eq!(info.source_name, "unusual_delight-4.4.jar");
         let jar_pos = info.jar_position.unwrap();
         assert_eq!(jar_pos.position, 375);
         assert_eq!(jar_pos.char, '#');
@@ -138,7 +138,7 @@ mod tests {
     fn extract_version() {
         let text = "~[[1.20.1-Forge] Hybrid Aquatic 1.5.2 Hotfix.jar#371!/:1.5.2] {re:mixin,re:classloading}";
         let info = parse_trace_source_info(text).expect("Failed to parse");
-        assert_eq!(info.jar_name, "[1.20.1-Forge] Hybrid Aquatic 1.5.2 Hotfix.jar");
+        assert_eq!(info.source_name, "[1.20.1-Forge] Hybrid Aquatic 1.5.2 Hotfix.jar");
         assert_eq!(info.version.unwrap(), "1.5.2");
         let jar_pos = info.jar_position.unwrap();
         assert_eq!(jar_pos.position, 371);

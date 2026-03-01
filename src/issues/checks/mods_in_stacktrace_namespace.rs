@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{issues::issue::Issue, parse::crash_report::CrashReport};
 
-pub(crate) fn check_mods_in_stacktrace<'a>(mod_lookup_map: &BTreeMap<String, String>, report: &CrashReport) -> Option<Issue> {
+pub(crate) fn check_mods_in_stacktrace_namespace<'a>(mod_lookup_map: &BTreeMap<String, String>, report: &CrashReport) -> Option<Issue> {
 	let mut mods = BTreeSet::new();
 	for stacktrace in &report.stacktrace {
 		for line in &stacktrace.lines {
@@ -15,7 +15,7 @@ pub(crate) fn check_mods_in_stacktrace<'a>(mod_lookup_map: &BTreeMap<String, Str
 			}
 		}
 	}
-    (!mods.is_empty()).then_some(Issue::ModsFoundInStacktrace(mods))
+    (!mods.is_empty()).then_some(Issue::ModsFoundInStacktraceNamespace(mods))
 }
 
 #[cfg(test)]
@@ -87,8 +87,8 @@ Thread: Render thread
         let crash_report = CrashReport::parse(crash_report_fragment).expect("Failed to parse crash report");
 
 		let mod_lookup_map = indexed_header.get_mod_name_lookup_map().unwrap();
-        let issue = check_mods_in_stacktrace(&mod_lookup_map, &crash_report).expect("Failed to find issue");
-		let Issue::ModsFoundInStacktrace(mods) = issue else { panic!("Not the right issue"); };
+        let issue = check_mods_in_stacktrace_namespace(&mod_lookup_map, &crash_report).expect("Failed to find issue");
+		let Issue::ModsFoundInStacktraceNamespace(mods) = issue else { panic!("Not the right issue"); };
 		assert_eq!(mods.len(), 1);
 		assert!(mods.contains("waveycapes-fabric-1.8.2-mc1.21.11"))
     }

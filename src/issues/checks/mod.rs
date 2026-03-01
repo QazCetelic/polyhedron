@@ -34,7 +34,8 @@ pub mod shader_compile_error;
 pub mod suspected_mod;
 pub mod entrypoint_execution_errors;
 pub mod critical_injection_failure;
-pub mod mods_in_stacktrace;
+pub mod mods_in_stacktrace_namespace;
+pub mod mods_in_stacktrace_info;
 pub mod mixin_apply_failure;
 
 #[allow(dead_code)]
@@ -51,16 +52,24 @@ pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) ->
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_CRASH_REPORT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&CrashReport) -> Option<Issue>>; 3] = [
+pub const CHECKS_CRASH_REPORT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&CrashReport) -> Option<Issue>>; 4] = [
     |_header| {
         Box::new(suspected_mod::check_suspected_mod_crash_report)
     },
     |_header| {
         Box::new(entrypoint_execution_errors::entrypoint_execution_errors)
     },
-     |header| {
+    |header| {
         if let Some(mod_lookup_map) = header.get_mod_name_lookup_map() {
-            Box::new(move |report| { mods_in_stacktrace::check_mods_in_stacktrace(&mod_lookup_map, report) })
+            Box::new(move |report| { mods_in_stacktrace_namespace::check_mods_in_stacktrace_namespace(&mod_lookup_map, report) })
+        }
+        else {
+            Box::new(|_report| { None })
+        }
+    },
+    |header| {
+        if let Some(mods) = header.get_mods() {
+            Box::new(move |report| { mods_in_stacktrace_info::check_mods_in_stacktrace_info(&mods, report) })
         }
         else {
             Box::new(|_report| { None })
@@ -70,7 +79,7 @@ pub const CHECKS_CRASH_REPORT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(
 
 #[allow(dead_code)]
 pub const CHECKS_STACKTRACE: [fn(&Stacktrace) -> Option<Issue>; 1] = [
-    critical_injection_failure::critical_injection_failure
+    critical_injection_failure::critical_injection_failure,
 ];
 
 #[allow(dead_code)]

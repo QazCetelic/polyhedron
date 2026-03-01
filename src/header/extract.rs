@@ -12,6 +12,7 @@ pub struct JavaVersionInfo {
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "dioxius", derive(Clone, PartialEq))]
+#[derive(Debug)]
 pub struct ModInfo {
     pub name: String,
     pub enabled: bool,

@@ -78,8 +78,10 @@ pub enum Issue {
     EntrypointExecutionErrors(Box<EntrypointExecutionErrors>),
     #[error("Critical injection failure")]
     CriticalInjectionFailure(Box<CriticalInjectionFailure>),
-    #[error("Found mods in stacktrace")]
-    ModsFoundInStacktrace(BTreeSet<String>),
+    #[error("Found mods in stacktrace namespace")]
+    ModsFoundInStacktraceNamespace(BTreeSet<String>),
+    #[error("Found mods in stacktrace info")]
+    ModsFoundInStacktraceInfo(BTreeSet<String>),
     #[error("Mixin apply for mod failed")]
     MixinApplyFailure(String),
     #[error("Java Runtime Environment had a fatal error")]

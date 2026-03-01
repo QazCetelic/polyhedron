@@ -166,7 +166,14 @@ pub fn format_issue(issue: &Issue) -> FormattedIssueInfo {
                 description: format!("A critical injection failure has occurred for mod {} at method {}", critical_injection_failure.normalized_mod_name, critical_injection_failure.method),
             }
         },
-        Issue::ModsFoundInStacktrace(btree_set) => {
+        Issue::ModsFoundInStacktraceNamespace(btree_set) => {
+            let mods = btree_set.iter().cloned().collect::<Vec<_>>().join(", ");
+            FormattedIssueInfo {
+                title: "Mods Found in Stacktrace".to_string(),
+                description: format!("The following mods had a very similar name to the namespaces in the error's stacktrace: {}", mods),
+            }
+        },
+        Issue::ModsFoundInStacktraceInfo(btree_set) => {
             let mods = btree_set.iter().cloned().collect::<Vec<_>>().join(", ");
             FormattedIssueInfo {
                 title: "Mods Found in Stacktrace".to_string(),
