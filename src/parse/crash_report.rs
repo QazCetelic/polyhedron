@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::{entries::time::LogTime, parse::stacktrace::Stacktrace};
+use crate::{entries::time::LogTime, parse::stacktrace::model::Stacktrace};
 
 #[allow(dead_code)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

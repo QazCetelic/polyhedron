@@ -1,4 +1,4 @@
-use crate::{entries::time::LogTime, parse::stacktrace::is_valid_classname};
+use crate::{entries::time::LogTime};
 
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

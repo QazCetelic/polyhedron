@@ -1,65 +1,12 @@
 use std::str::Lines;
 
+use crate::parse::stacktrace::model::{Stacktrace, StacktraceLine};
+
 #[derive(Debug)]
 pub struct StacktraceParser {
     exception: Option<String>,
     message: Option<String>,
     lines: Vec<StacktraceLine>,
-}
-
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[allow(dead_code)]
-#[derive(Debug, PartialEq, Clone)]
-pub struct StacktraceLine {
-    pub class: String,
-    pub method: String,
-    pub source: String,
-    pub rest: String,
-}
-
-impl StacktraceLine {
-    #[allow(dead_code)]
-    pub fn get_jar(&self) -> Option<String> {
-        // "~[lwjgl-2.9.4-nightly-20150209.jar:?]"
-        let without_brackets = self.rest.strip_suffix(']')?.trim_start_matches('~').strip_prefix('[')?;
-        // "lwjgl-2.9.4-nightly-20150209.jar:?"
-        let (source, _) = without_brackets.split_once(':')?;
-        if source.ends_with(".jar") {
-            Some(source.to_string())
-        }
-        else {
-            None
-        }
-    }
-
-    /// Gets the relative file path of the source code and the line
-    pub fn get_relative_path(&self) -> Option<(String, usize)> {
-        // "EntryPoint.java:70"
-        let (class_name, line) = self.source.split_once(".java:")?;
-        let line: usize = line.parse().ok()?;
-        if !valid_java_identifier(class_name) || !self.class.ends_with(class_name) {
-            return None;
-        }
-        let mut path = String::with_capacity(self.class.len());
-        let mut iter = self.class.split('.').peekable();
-        while let Some(part) = iter.next() {
-            path.push_str(part);
-            if iter.peek().is_some() {
-                path.push('/');
-            }
-        }
-        path.push_str(".java");
-        Some((path, line))
-    }
-}
-
-#[derive(Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "dioxius", derive(Clone, PartialEq))]
-pub struct Stacktrace {
-    pub exception: String,
-    pub message: String,
-    pub lines: Vec<StacktraceLine>,
 }
 
 impl Stacktrace {
@@ -71,7 +18,7 @@ impl Stacktrace {
 }
 
 // "java.lang.Throwable" -> true, "ERROR" -> false
-fn valid_java_identifier(identifier: &str) -> bool {
+pub(crate) fn valid_java_identifier(identifier: &str) -> bool {
     let mut chars = identifier.chars();
     let Some(first_char) = chars.next() else {
         return false;
@@ -136,7 +83,7 @@ impl StacktraceParser {
             class: class.to_string(),
             method: method.to_string(),
             source: source.to_string(),
-            rest: rest.to_string(),
+            source_info: rest.to_string(),
         })
     }
 
@@ -212,7 +159,7 @@ mod tests {
         assert_eq!(trace_line.class, "org.lwjgl.opengl.LinuxDisplayPeerInfo");
         assert_eq!(trace_line.method, "initDefaultPeerInfo");
         assert_eq!(trace_line.source, "Native Method");
-        assert_eq!(trace_line.rest, "");
+        assert_eq!(trace_line.source_info, "");
     }
 
     #[test]
@@ -220,7 +167,7 @@ mod tests {
         let line = "\tat org.prismlauncher.launcher.impl.StandardLauncher.launch(StandardLauncher.java:105) [NewLaunch.jar:?]";
         let mut parser = StacktraceParser::new();
         let trace_line = parser.parse_trace_line(line).expect("Failed to parse");
-        assert_eq!(trace_line.rest, "[NewLaunch.jar:?]");
+        assert_eq!(trace_line.source_info, "[NewLaunch.jar:?]");
         assert_eq!(trace_line.get_jar().expect("Failed to get jar"), "NewLaunch.jar");
     }
 

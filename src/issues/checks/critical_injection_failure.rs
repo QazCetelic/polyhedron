@@ -1,4 +1,4 @@
-use crate::{issues::issue::Issue, parse::stacktrace::Stacktrace};
+use crate::{issues::issue::Issue, parse::stacktrace::model::Stacktrace};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
