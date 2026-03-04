@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, VecDeque};
 
-use crate::{header::index::IndexedLogHeader, parse::normalize_mod_name::normalize_mod_name};
+use crate::{header::{index::IndexedLogHeader, mc_version::McVersion}, parse::normalize_mod_name::normalize_mod_name};
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "dioxius", derive(Clone, PartialEq))]
@@ -220,6 +220,12 @@ impl<'a> IndexedLogHeader<'a> {
         }
         Some(map)
     }
+
+    pub fn get_mc_version(&self) -> Option<McVersion> {
+        let (_, version_etc) = self.get_params()?.split_once(" --version ")?;
+        let (version_str, _) = version_etc.split_once(" ")?;
+        McVersion::from_str(version_str)
+    }
 }
 
 #[cfg(test)]
@@ -230,6 +236,10 @@ mod tests {
     fn extract_from_header_1() {
         let string = include_str!("test_data/header_1.log");
         let index = IndexedLogHeader::index_header(string);
+        let mc_version = index.get_mc_version().expect("Failed to get MC version");
+        assert_eq!(mc_version.major, 1);
+        assert_eq!(mc_version.minor, 20);
+        assert_eq!(mc_version.patch, Some(1));
         let online_mode = index.get_online_mode().expect("Failed to get online mode");
         assert_eq!(online_mode, true);
         let mc_folder_location_str = index.get_mc_folder_location().expect("Failed to get MC folder location");

@@ -3,3 +3,4 @@ pub mod index; // Index the log header and return the positions of each specific
 pub mod extract; // Functions to extract specific info from the header using the index
 pub mod info; // All extractable info from header
 pub mod mod_loader;
+pub mod mc_version;

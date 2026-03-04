@@ -87,7 +87,7 @@ pub const CHECKS_ALL_STACKTRACES: [fn(&Stacktrace) -> Option<Issue>; 1] = [
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 9] = [
+pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 8] = [
     optifine::optifine_header,
     corrupted_instance::corrupted_instance,
     invalid_folder_name::invalid_folder_name_header,
@@ -96,7 +96,7 @@ pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 9]
     locked_jar::locked_jar_header,
     java_option::java_option,
     missing_libraries::missing_libraries_header,
-    outdated_launcher::outdated_launcher_header,
+    // outdated_launcher::outdated_launcher_header,
 ];
 
 #[allow(dead_code)]
