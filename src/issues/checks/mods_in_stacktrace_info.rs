@@ -1,11 +1,11 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
-use crate::{header::extract::ModInfo, issues::issue::Issue, parse::crash_report::CrashReport};
+use crate::{header::extract::ModInfo, issues::issue::Issue, parse::{crash_report::CrashReport, stacktrace::model::Stacktrace}};
 
-pub(crate) fn check_mods_in_stacktrace_info<'a>(mods_in_header: &[ModInfo], report: &CrashReport) -> Option<Issue> {
+pub(crate) fn check_mods_in_stacktrace_info<'a>(mods_in_header: &[ModInfo], stacktraces: &[Stacktrace]) -> Option<Issue> {
     let mods_set = mods_in_header.iter().filter(|m| m.enabled).map(|m| m.name.to_string()).collect::<BTreeSet<String>>();
 	let mut mods = BTreeSet::new();
-	for stacktrace in &report.stacktrace {
+	for stacktrace in stacktraces {
 		for line in &stacktrace.lines {
 			if let Some(info) = line.extract_source_info() {
                 if let Some(jar_name) = info.source_name.strip_suffix(".jar") { 
@@ -156,7 +156,7 @@ Thread: Render thread
         let crash_report = CrashReport::parse(crash_report_fragment).expect("Failed to parse crash report");
 
 		let mods = indexed_header.get_mods().unwrap();
-        let issue = check_mods_in_stacktrace_info(&mods, &crash_report).expect("Failed to find issue");
+        let issue = check_mods_in_stacktrace_info(&mods, &crash_report.stacktrace).expect("Failed to find issue");
 		let Issue::ModsFoundInStacktraceInfo(mods) = issue else { panic!("Not the right issue"); };
 		assert_eq!(mods.len(), 2);
 		assert!(mods.contains("ShoulderSurfing-Forge-1.21.10-4.17.1.jar"))

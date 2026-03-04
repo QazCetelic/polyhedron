@@ -2,7 +2,7 @@ use std::io::{BufRead, ErrorKind};
 
 use thiserror::Error;
 
-use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_CRASH_REPORT, CHECKS_ENTRIES, CHECKS_HEADER, CHECKS_STACKTRACE, CHECKS_TEXT}, issue::Issue}, parse::{crash_report::CrashReport, exit_code::extract_exit_code, jre_fatal::JreFatalError, stacktrace::model::Stacktrace}};
+use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_ALL_STACKTRACES, CHECKS_CRASH_REPORT, CHECKS_ENTRIES, CHECKS_HEADER, CHECKS_LAST_STACKTRACES, CHECKS_TEXT}, issue::Issue}, parse::{crash_report::CrashReport, exit_code::extract_exit_code, jre_fatal::JreFatalError, stacktrace::model::Stacktrace}};
 
 pub mod entries;
 pub mod header;
@@ -155,10 +155,25 @@ fn find_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry], crash_report
                 issues.push(issue);
             }
         }
+        for build_last_stacktrace_check in CHECKS_LAST_STACKTRACES {
+            let crash_report_check = build_last_stacktrace_check(header);
+            if let Some(issue) = crash_report_check(&report.stacktrace) {
+                issues.push(issue);
+            }
+        }
+    }
+    else {
+        let last_stacktraces: Vec<Stacktrace> = stacktraces.iter().rev().take(3).map(|st| st.clone()).collect();
+        for build_last_stacktrace_check in CHECKS_LAST_STACKTRACES {
+            let crash_report_check: Box<dyn Fn(&[Stacktrace]) -> Option<Issue>> = build_last_stacktrace_check(header);
+            if let Some(issue) = crash_report_check(&last_stacktraces) {
+                issues.push(issue);
+            }
+        }
     }
 
     for stacktrace in stacktraces {
-        for stacktrace_check in CHECKS_STACKTRACE  {
+        for stacktrace_check in CHECKS_ALL_STACKTRACES  {
             if let Some(issue) = stacktrace_check(&stacktrace) {
                 issues.push(issue);
             }

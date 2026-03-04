@@ -1,10 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::{issues::issue::Issue, parse::crash_report::CrashReport};
+use crate::{issues::issue::Issue, parse::stacktrace::model::Stacktrace};
 
-pub(crate) fn check_mods_in_stacktrace_namespace<'a>(mod_lookup_map: &BTreeMap<String, String>, report: &CrashReport) -> Option<Issue> {
+pub(crate) fn check_mods_in_stacktrace_namespace<'a>(mod_lookup_map: &BTreeMap<String, String>, stacktraces: &[Stacktrace]) -> Option<Issue> {
 	let mut mods = BTreeSet::new();
-	for stacktrace in &report.stacktrace {
+	for stacktrace in stacktraces {
 		for line in &stacktrace.lines {
 			// Looks for mod name in stacktrace classname
 			let parts = line.class.split('.');
@@ -20,7 +20,7 @@ pub(crate) fn check_mods_in_stacktrace_namespace<'a>(mod_lookup_map: &BTreeMap<S
 
 #[cfg(test)]
 mod tests {
-    use crate::header::index::IndexedLogHeader;
+    use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader, parse::{crash_report::CrashReport, stacktrace::model::Stacktrace}};
 
     use super::*;
 
@@ -87,9 +87,159 @@ Thread: Render thread
         let crash_report = CrashReport::parse(crash_report_fragment).expect("Failed to parse crash report");
 
 		let mod_lookup_map = indexed_header.get_mod_name_lookup_map().unwrap();
-        let issue = check_mods_in_stacktrace_namespace(&mod_lookup_map, &crash_report).expect("Failed to find issue");
+        let issue = check_mods_in_stacktrace_namespace(&mod_lookup_map, &crash_report.stacktrace).expect("Failed to find issue");
 		let Issue::ModsFoundInStacktraceNamespace(mods) = issue else { panic!("Not the right issue"); };
 		assert_eq!(mods.len(), 1);
 		assert!(mods.contains("waveycapes-fabric-1.8.2-mc1.21.11"))
+    }
+
+	#[test]
+    fn detect_mods_2() {
+        let header_fragment = r#"
+Mods:
+  [✔] 3dSkinLayers-forge-mc1.8.9-1.2.0
+  [✔] Aoneconfigbootstrap-1.8.9-forge-1.0.3
+  [✔] Autocorrect-1.1 (1.8.9)
+  [✔] AutoGG_Reimagined-1.8.9-forge-1.1
+  [✔] AutoParty-1.0
+  [✔] BedWar-0.1.7.Pre.1
+  [✔] Bedwars_Mod-1.8.9-forge-0.2.5.3
+  [✔] BetterFps-1.2.0
+  [✔] BetterHurtCam-2.2.0
+  [✔] Chatting-1.8.9-forge-1.5.3
+  [✔] ColorSaturation-1.8.9-forge-1.0.0
+  [✔] Controlling-7.0.0.1
+  [✔] CrashPatch-1.8.9-forge-2.0.2
+  [✔] entityculling-forge-mc1.8.9-1.5.0
+  [✔] essential_1-3-1-1_forge_1-8-9
+  [✔] EvergreenHUD-1.8.9-forge-2.1.4
+  [✔] foamfix-0.6.3a-anarchy-1.8.x
+  [✔] HitDelayFix1.8.9
+  [✔] Hytools-1.8
+  [✔] Ksyxis-1.3.4
+  [✔] LevelHead-8.2.2 (1.8.9)
+  [✔] microoptimizations-1.0.0
+  [✔] ModernKeyBinding-Forge-1.8.9-2.1.0
+  [✔] MouseTweaks-2.6.2-mc1.8.9
+  [✔] NotSoEssential-Forge-1.0.3
+  [✔] Optibye-1.0.0-dep
+  [✔] OptiFine_1.8.9_HD_U_M5
+  [✔] OverflowAnimations-1.8.9-forge-2.2.5
+  [✔] Patcher-1.8.9 (1.8.9)
+  [✔] PerspectiveModv4-master-4.5
+  [✔] ping-1.8.9-2.0.4
+  [✔] PolyCrosshair-1.8.9-forge-1.0.3
+  [✔] PolyNametag-1.8.9-forge-1.0.9
+  [✔] PolySprint-1.8.9-forge-1.0.1
+  [✔] QuickJoin-1.8.9-forge-2.9
+  [✔] RawInput-0.1.8 1.8.9-forge
+  [✔] RewardClaim-1.0.7
+  [✔] simpletimechanger-1.0.2
+  [✔] TNT Time-1.1 (1.8.9)
+  [✔] VanillaHUD-1.8.9-forge-2.1.1
+  [✔] veloxcaelo-1.1.0
+  [✔] weaponmaster_ydm-forge-1.8.9-4.2.3
+  [✔] zergatul.freecam-0.1.1-forge-1.8.9
+
+Params:
+  --username  --version 1.8.9 --gameDir C:/Users/********/AppData/Roaming/PrismLauncher/instances/Enhanced Bedwars/minecraft --assetsDir C:/Users/********/AppData/Roaming/PrismLauncher/assets --assetIndex 1.8 --uuid  --accessToken  --userProperties  --userType  --tweakClass net.minecraftforge.fml.common.launcher.FMLTweaker
+  "#;
+        let indexed_header = IndexedLogHeader::index_header(header_fragment);
+
+        let log_fragment = r#"
+[17:07:10] [Sound Library Loader/INFO]: Sound engine started
+[17:07:11] [Thread-18/ERROR] [FML]: Splash thread Exception
+java.lang.NullPointerException: Parameter specified as non-null is null: method gg.essential.gui.common.ExtensionsKt.or, parameter other
+	at gg.essential.gui.common.ExtensionsKt.or(extensions.kt) ~[ExtensionsKt.class:?]
+	at gg.essential.gui.common.MenuButton.<init>(MenuButton.kt:93) ~[MenuButton.class:?]
+	at gg.essential.gui.common.MenuButton.<init>(MenuButton.kt:159) ~[MenuButton.class:?]
+	at gg.essential.gui.common.MenuButton.<init>(MenuButton.kt:147) ~[MenuButton.class:?]
+	at gg.essential.gui.menu.RightSideBarNew$inviteOrHostButton$1$3$1.invoke(RightSideBarNew.kt:213) ~[RightSideBarNew$inviteOrHostButton$1$3$1.class:?]
+	at gg.essential.gui.menu.RightSideBarNew$inviteOrHostButton$1$3$1.invoke(RightSideBarNew.kt:212) ~[RightSideBarNew$inviteOrHostButton$1$3$1.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope$if_$2.invoke(layout.kt:67) ~[LayoutScope$if_$2.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope$if_$2.invoke(layout.kt:67) ~[LayoutScope$if_$2.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.forEach$add(layout.kt:138) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.forEach$update(layout.kt:163) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.access$forEach$update(layout.kt:31) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope$forEach$1.invoke(layout.kt:179) ~[LayoutScope$forEach$1.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope$forEach$1.invoke(layout.kt:176) ~[LayoutScope$forEach$1.class:?]
+	at gg.essential.gui.elementa.state.v2.impl.basic.Node.update(impl.kt:255) ~[Node.class:?]
+	at gg.essential.gui.elementa.state.v2.impl.basic.MarkThenPushAndPullImpl.effect(impl.kt:62) ~[MarkThenPushAndPullImpl.class:?]
+	at gg.essential.gui.elementa.state.v2.StateKt.effect(state.kt:123) ~[StateKt.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.forEach(layout.kt:176) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.if_(layout.kt:67) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.if_$default(layout.kt:66) ~[LayoutScope.class:?]
+	at gg.essential.gui.menu.RightSideBarNew$inviteOrHostButton$1$3.invoke(RightSideBarNew.kt:212) ~[RightSideBarNew$inviteOrHostButton$1$3.class:?]
+	at gg.essential.gui.menu.RightSideBarNew$inviteOrHostButton$1$3.invoke(RightSideBarNew.kt:203) ~[RightSideBarNew$inviteOrHostButton$1$3.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope$if_$2.invoke(layout.kt:67) ~[LayoutScope$if_$2.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope$if_$2.invoke(layout.kt:67) ~[LayoutScope$if_$2.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.forEach$add(layout.kt:138) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.forEach$update(layout.kt:163) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.access$forEach$update(layout.kt:31) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope$forEach$1.invoke(layout.kt:179) ~[LayoutScope$forEach$1.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope$forEach$1.invoke(layout.kt:176) ~[LayoutScope$forEach$1.class:?]
+	at gg.essential.gui.elementa.state.v2.impl.basic.Node.update(impl.kt:255) ~[Node.class:?]
+	at gg.essential.gui.elementa.state.v2.impl.basic.MarkThenPushAndPullImpl.effect(impl.kt:62) ~[MarkThenPushAndPullImpl.class:?]
+	at gg.essential.gui.elementa.state.v2.StateKt.effect(state.kt:123) ~[StateKt.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.forEach(layout.kt:176) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.if_(layout.kt:67) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.else(layout.kt:83) ~[LayoutScope.class:?]
+	at gg.essential.gui.menu.RightSideBarNew$inviteOrHostButton$1.invoke(RightSideBarNew.kt:203) ~[RightSideBarNew$inviteOrHostButton$1.class:?]
+	at gg.essential.gui.menu.RightSideBarNew$inviteOrHostButton$1.invoke(RightSideBarNew.kt:202) ~[RightSideBarNew$inviteOrHostButton$1.class:?]
+	at gg.essential.gui.proxies.ScreenWithProxiesHandler$Companion$mountWithProxy$2$1.invoke(ScreenWithProxiesHandler.kt:120) ~[ScreenWithProxiesHandler$Companion$mountWithProxy$2$1.class:?]
+	at gg.essential.gui.proxies.ScreenWithProxiesHandler$Companion$mountWithProxy$2$1.invoke(ScreenWithProxiesHandler.kt:119) ~[ScreenWithProxiesHandler$Companion$mountWithProxy$2$1.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.invoke(layout.kt:51) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.ContainersKt.box(containers.kt:45) ~[ContainersKt.class:?]
+	at gg.essential.gui.proxies.ScreenWithProxiesHandler$Companion$mountWithProxy$2.invoke(ScreenWithProxiesHandler.kt:119) ~[ScreenWithProxiesHandler$Companion$mountWithProxy$2.class:?]
+	at gg.essential.gui.proxies.ScreenWithProxiesHandler$Companion$mountWithProxy$2.invoke(ScreenWithProxiesHandler.kt:117) ~[ScreenWithProxiesHandler$Companion$mountWithProxy$2.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope$if_$2.invoke(layout.kt:67) ~[LayoutScope$if_$2.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope$if_$2.invoke(layout.kt:67) ~[LayoutScope$if_$2.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.forEach$add(layout.kt:138) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.forEach$update(layout.kt:163) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.access$forEach$update(layout.kt:31) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope$forEach$1.invoke(layout.kt:179) ~[LayoutScope$forEach$1.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope$forEach$1.invoke(layout.kt:176) ~[LayoutScope$forEach$1.class:?]
+	at gg.essential.gui.elementa.state.v2.impl.basic.Node.update(impl.kt:255) ~[Node.class:?]
+	at gg.essential.gui.elementa.state.v2.impl.basic.MarkThenPushAndPullImpl.effect(impl.kt:62) ~[MarkThenPushAndPullImpl.class:?]
+	at gg.essential.gui.elementa.state.v2.StateKt.effect(state.kt:123) ~[StateKt.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.forEach(layout.kt:176) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.if_(layout.kt:67) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.if_$default(layout.kt:66) ~[LayoutScope.class:?]
+	at gg.essential.gui.proxies.ScreenWithProxiesHandler$Companion.mountWithProxy(ScreenWithProxiesHandler.kt:117) ~[ScreenWithProxiesHandler$Companion.class:?]
+	at gg.essential.gui.proxies.ScreenWithProxiesHandler$Companion.mountWithProxy$default(ScreenWithProxiesHandler.kt:114) ~[ScreenWithProxiesHandler$Companion.class:?]
+	at gg.essential.gui.menu.RightSideBarNew.inviteOrHostButton(RightSideBarNew.kt:202) ~[RightSideBarNew.class:?]
+	at gg.essential.gui.menu.RightSideBarNew.access$inviteOrHostButton(RightSideBarNew.kt:67) ~[RightSideBarNew.class:?]
+	at gg.essential.gui.menu.RightSideBarNew$1$1.invoke(RightSideBarNew.kt:124) ~[RightSideBarNew$1$1.class:?]
+	at gg.essential.gui.menu.RightSideBarNew$1$1.invoke(RightSideBarNew.kt:120) ~[RightSideBarNew$1$1.class:?]
+	at gg.essential.gui.layoutdsl.LayoutScope.invoke(layout.kt:51) ~[LayoutScope.class:?]
+	at gg.essential.gui.layoutdsl.ContainersKt.row(containers.kt:67) ~[ContainersKt.class:?]
+	at gg.essential.gui.layoutdsl.ContainersKt.row(containers.kt:52) ~[ContainersKt.class:?]
+	at gg.essential.gui.layoutdsl.ContainersKt.row$default(containers.kt:48) ~[ContainersKt.class:?]
+	at gg.essential.gui.menu.RightSideBarNew$1.invoke(RightSideBarNew.kt:120) ~[RightSideBarNew$1.class:?]
+	at gg.essential.gui.menu.RightSideBarNew$1.invoke(RightSideBarNew.kt:111) ~[RightSideBarNew$1.class:?]
+	at gg.essential.gui.layoutdsl.LayoutKt.layoutAsColumn(layout.kt:392) ~[LayoutKt.class:?]
+	at gg.essential.gui.menu.RightSideBarNew.<init>(RightSideBarNew.kt:111) ~[RightSideBarNew.class:?]
+	at gg.essential.handlers.PauseMenuDisplay.initContent(PauseMenuDisplay.kt:214) ~[PauseMenuDisplay.class:?]
+	at gg.essential.gui.proxies.ScreenWithProxiesHandler$Companion$forMainMenu$1.invoke(ScreenWithProxiesHandler.kt:99) ~[ScreenWithProxiesHandler$Companion$forMainMenu$1.class:?]
+	at gg.essential.gui.proxies.ScreenWithProxiesHandler$Companion$forMainMenu$1.invoke(ScreenWithProxiesHandler.kt:98) ~[ScreenWithProxiesHandler$Companion$forMainMenu$1.class:?]
+	at gg.essential.gui.proxies.ScreenWithProxiesHandler.initGui(ScreenWithProxiesHandler.kt:60) ~[ScreenWithProxiesHandler.class:?]
+	at net.minecraft.client.gui.GuiMainMenu.handler$bgi001$addProxyButtons(GuiMainMenu.java:1799) ~[aya.class:?]
+	at net.minecraft.client.gui.GuiMainMenu.func_73866_w_(GuiMainMenu.java:263) ~[aya.class:?]
+	at net.minecraft.client.gui.GuiScreen.func_146280_a(GuiScreen.java:502) ~[axu.class:?]
+	at net.minecraft.client.gui.GuiScreen.func_175273_b(GuiScreen.java:697) ~[axu.class:?]
+	at net.minecraft.client.Minecraft.func_71370_a(Minecraft.java:1595) ~[ave.class:?]
+	at net.minecraftforge.fml.client.SplashProgress$3.clearGL(SplashProgress.java:463) ~[SplashProgress$3.class:?]
+	at net.minecraftforge.fml.client.SplashProgress$3.run(SplashProgress.java:384) ~[SplashProgress$3.class:?]
+	at java.lang.Thread.run(Thread.java:745) [?:1.8.0_51]
+"#;
+		let entries = LogEntry::from_lines(log_fragment.lines());
+		let stacktraces = Stacktrace::from_lines(entries.last().unwrap().contents.lines()).collect::<Vec<Stacktrace>>();
+		assert!(!stacktraces.is_empty());
+
+		let mod_lookup_map = indexed_header.get_mod_name_lookup_map().unwrap();
+        let issue = check_mods_in_stacktrace_namespace(&mod_lookup_map, &stacktraces).expect("Failed to find issue");
+		let Issue::ModsFoundInStacktraceNamespace(mods) = issue else { panic!("Not the right issue"); };
+		assert_eq!(mods.len(), 1);
+		assert!(mods.contains("essential_1-3-1-1_forge_1-8-9"))
     }
 }

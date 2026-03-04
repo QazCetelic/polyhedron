@@ -1,7 +1,7 @@
 fn find_version_index(s: &str) -> Option<usize> {
     let mut char_iter = s.chars().enumerate().peekable();
     while let Some((index, c)) = char_iter.next() {
-        if c.is_ascii_digit() && char_iter.peek()?.1 == '.' {
+        if c.is_ascii_digit() && (char_iter.peek()?.1 == '.' || char_iter.peek()?.1 == '_') {
             // TODO optimize
             let numbers_before = s.chars().take(index).collect::<Vec<char>>().iter().rev().take_while(|c| c.is_ascii_digit()).count();
             return Some(index - numbers_before);
@@ -31,6 +31,11 @@ pub(crate) fn normalize_mod_name(name: &str) -> String {
         if let Some(wo_version) = name.get(..ver_index) {
             name = wo_version.to_string();
         }
+    }
+
+    // "abcdef_12" -> "abcdef"
+    if let Some((left, right)) = name.split_once('_') && right.chars().nth(0).map(|c| c.is_ascii_digit()).unwrap_or(false) {
+        name = left.to_string();
     }
 
     name.replace(&['-', '_', '[', '\'', ' '], "")
@@ -85,6 +90,7 @@ mod tests {
         assert_eq!(normalize_mod_name("duckling-fabric-1.20.4-4.0.0"), "duckling");
         assert_eq!(normalize_mod_name("GuardRibbits-1.20.1-Forge-1.0.4.jar"), "guardribbits");
         assert_eq!(normalize_mod_name("bclib-21.0.13"), "bclib");
+        assert_eq!(normalize_mod_name("essential_1-3-1-1_forge_1-8-9"), "essential");
         // assert_eq!(normalize_mod_name("[1.20.1]davesbuilds"), "davesbuilds");
     }
 }

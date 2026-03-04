@@ -52,16 +52,20 @@ pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) ->
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_CRASH_REPORT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&CrashReport) -> Option<Issue>>; 4] = [
+pub const CHECKS_CRASH_REPORT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&CrashReport) -> Option<Issue>>; 1] = [
     |_header| {
         Box::new(suspected_mod::check_suspected_mod_crash_report)
     },
+];
+
+#[allow(dead_code)]
+pub const CHECKS_LAST_STACKTRACES: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&[Stacktrace]) -> Option<Issue>>; 3] = [
     |_header| {
-        Box::new(entrypoint_execution_errors::entrypoint_execution_errors)
+        Box::new(move |stacktraces| { entrypoint_execution_errors::entrypoint_execution_errors(&stacktraces) })
     },
     |header| {
         if let Some(mod_lookup_map) = header.get_mod_name_lookup_map() {
-            Box::new(move |report| { mods_in_stacktrace_namespace::check_mods_in_stacktrace_namespace(&mod_lookup_map, report) })
+            Box::new(move |stacktraces| { mods_in_stacktrace_namespace::check_mods_in_stacktrace_namespace(&mod_lookup_map, &stacktraces) })
         }
         else {
             Box::new(|_report| { None })
@@ -69,7 +73,7 @@ pub const CHECKS_CRASH_REPORT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(
     },
     |header| {
         if let Some(mods) = header.get_mods() {
-            Box::new(move |report| { mods_in_stacktrace_info::check_mods_in_stacktrace_info(&mods, report) })
+            Box::new(move |stacktraces| { mods_in_stacktrace_info::check_mods_in_stacktrace_info(&mods, &stacktraces) })
         }
         else {
             Box::new(|_report| { None })
@@ -78,7 +82,7 @@ pub const CHECKS_CRASH_REPORT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_STACKTRACE: [fn(&Stacktrace) -> Option<Issue>; 1] = [
+pub const CHECKS_ALL_STACKTRACES: [fn(&Stacktrace) -> Option<Issue>; 1] = [
     critical_injection_failure::critical_injection_failure,
 ];
 
