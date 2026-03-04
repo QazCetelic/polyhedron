@@ -2,7 +2,7 @@ use crate::parse::stacktrace::parse::valid_java_identifier;
 
 #[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "dioxius", derive(Clone, PartialEq))]
+#[cfg_attr(feature = "dioxius", derive(PartialEq))]
 #[derive(Clone)]
 pub struct Stacktrace {
     pub exception: String,
