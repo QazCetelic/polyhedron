@@ -153,10 +153,9 @@ A detailed walkthrough of the error, its code path and all known details is as f
 -- Head --
 Thread: Render thread
 "#;
-        let crash_report = CrashReport::parse(crash_report_fragment).expect("Failed to parse crash report");
-
+    let crash_report = CrashReport::parse(crash_report_fragment).expect("Failed to parse crash report");
 		let mods = indexed_header.get_mods().unwrap();
-        let issue = check_mods_in_stacktrace_info(&mods, &crash_report.stacktrace).expect("Failed to find issue");
+    let issue = check_mods_in_stacktrace_info(&mods, &crash_report.stacktrace).expect("Failed to find issue");
 		let Issue::ModsFoundInStacktraceInfo(mods) = issue else { panic!("Not the right issue"); };
 		assert_eq!(mods.len(), 2);
 		assert!(mods.contains("ShoulderSurfing-Forge-1.21.10-4.17.1.jar"))

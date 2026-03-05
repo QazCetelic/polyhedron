@@ -192,5 +192,11 @@ pub fn format_issue(issue: &Issue) -> FormattedIssueInfo {
                 description: format!("Error:\n{}Contents:{:.75}", jre_fatal_error.error, jre_fatal_error.contents),
             }
         },
+        Issue::InstanceUpdateFailed(reason) => {
+            FormattedIssueInfo {
+                title: "Instance update failed".to_string(),
+                description: reason.to_string(),
+            }
+        },
     }
 }

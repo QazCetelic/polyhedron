@@ -86,4 +86,6 @@ pub enum Issue {
     MixinApplyFailure(String),
     #[error("Java Runtime Environment had a fatal error")]
     FatalErrorJre(Box<JreFatalError>),
+    #[error("Instance update failed")]
+    InstanceUpdateFailed(String),
 }

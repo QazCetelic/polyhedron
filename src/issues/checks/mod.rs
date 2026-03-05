@@ -37,6 +37,7 @@ pub mod critical_injection_failure;
 pub mod mods_in_stacktrace_namespace;
 pub mod mods_in_stacktrace_info;
 pub mod mixin_apply_failure;
+pub mod instance_update_failed;
 
 #[allow(dead_code)]
 pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) -> Option<Issue>>; 3] = [
@@ -87,7 +88,7 @@ pub const CHECKS_ALL_STACKTRACES: [fn(&Stacktrace) -> Option<Issue>; 1] = [
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 8] = [
+pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 9] = [
     optifine::optifine_header,
     corrupted_instance::corrupted_instance,
     invalid_folder_name::invalid_folder_name_header,
@@ -96,6 +97,7 @@ pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 8]
     locked_jar::locked_jar_header,
     java_option::java_option,
     missing_libraries::missing_libraries_header,
+    instance_update_failed::instance_update_failed,
     // outdated_launcher::outdated_launcher_header,
 ];
 
