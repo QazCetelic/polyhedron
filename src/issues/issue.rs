@@ -88,4 +88,6 @@ pub enum Issue {
     FatalErrorJre(Box<JreFatalError>),
     #[error("Instance update failed")]
     InstanceUpdateFailed(String),
+    #[error("Error occurred during initialization of VM")]
+    ErrorInitializationVM,
 }

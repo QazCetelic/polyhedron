@@ -198,5 +198,11 @@ pub fn format_issue(issue: &Issue) -> FormattedIssueInfo {
                 description: reason.to_string(),
             }
         },
+        Issue::ErrorInitializationVM => {
+            FormattedIssueInfo {
+                title: "Error occurred during initialization of VM".to_string(),
+                description: "".to_string(),
+            }
+        },
     }
 }

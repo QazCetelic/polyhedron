@@ -38,6 +38,7 @@ pub mod mods_in_stacktrace_namespace;
 pub mod mods_in_stacktrace_info;
 pub mod mixin_apply_failure;
 pub mod instance_update_failed;
+pub mod error_initialization_vm;
 
 #[allow(dead_code)]
 pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) -> Option<Issue>>; 4] = [
@@ -91,7 +92,7 @@ pub const CHECKS_ALL_STACKTRACES: [fn(&Stacktrace) -> Option<Issue>; 1] = [
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 9] = [
+pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 10] = [
     optifine::optifine_header,
     corrupted_instance::corrupted_instance,
     invalid_folder_name::invalid_folder_name_header,
@@ -101,6 +102,7 @@ pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 9]
     java_option::java_option,
     missing_libraries::missing_libraries_header,
     instance_update_failed::instance_update_failed,
+    error_initialization_vm::error_initialization_vm,
     // outdated_launcher::outdated_launcher_header,
 ];
 
