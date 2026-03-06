@@ -11,8 +11,14 @@ pub(crate) fn oom(text: &str) -> Option<Issue> {
     return None;
 }
 
+pub(crate) fn oom_exit_code(exit_code: i32) -> Option<Issue> {
+    (exit_code == -805306369).then_some(Issue::Oom)
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::parse::exit_code::extract_exit_code;
+
     use super::*;
 
     #[test]
@@ -66,6 +72,19 @@ OpenJDK 64-Bit Server VM warning: INFO: os::commit_memory(0x0000000795800000, 72
 # An error report file with more information is saved as:
 # C:\Users\********\AppData\Roaming\PrismLauncher\instances\Mijoma's Additional Additions\minecraft\hs_err_pid104756.log"#;
         let issue = oom(text).expect("Failed to determine issue");
+        assert_eq!(issue, Issue::Oom);
+    }
+
+    #[test]
+    fn exit_code() {
+        let text = r#"[00:46:00] [MicrophoneThread/INFO] [voicechat/]: [voicechat] Connection timeout
+[00:46:00] [VoiceChatPacketProcessingThread/INFO] [voicechat/]: [voicechat] Reconnecting player DapperRitten
+[00:46:03] [VoiceChatPacketProcessingThread/INFO] [voicechat/]: [voicechat] Sent secret to DapperRitten
+[00:46:05] [MicrophoneThread/INFO] [voicechat/]: [voicechat] Stopping microphone thread
+Process crashed with exitcode -805306369.
+Log upload triggered at: 19 Nov 2025 00:48:09  0000"#;
+        let (_, exit_code) = extract_exit_code(text).expect("Failed to extract exit code");
+        let issue = oom_exit_code(exit_code).expect("Failed to determine issue");
         assert_eq!(issue, Issue::Oom);
     }
 }

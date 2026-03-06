@@ -2,7 +2,7 @@ use std::io::{BufRead, ErrorKind};
 
 use thiserror::Error;
 
-use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_ALL_STACKTRACES, CHECKS_CRASH_REPORT, CHECKS_ENTRIES, CHECKS_HEADER, CHECKS_LAST_STACKTRACES, CHECKS_TEXT}, issue::Issue}, parse::{crash_report::CrashReport, exit_code::extract_exit_code, jre_fatal::JreFatalError, stacktrace::model::Stacktrace}};
+use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{checks::{CHECKS_ALL_STACKTRACES, CHECKS_CRASH_REPORT, CHECKS_ENTRIES, CHECKS_EXIT_CODE, CHECKS_HEADER, CHECKS_LAST_STACKTRACES, CHECKS_TEXT}, issue::Issue}, parse::{crash_report::CrashReport, exit_code::extract_exit_code, jre_fatal::JreFatalError, stacktrace::model::Stacktrace}};
 
 pub mod entries;
 pub mod header;
@@ -93,7 +93,9 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
     }
 
     let indexed_header = IndexedLogHeader::from_index(index.clone(), &header_buffer);
-    let mut issues = find_issues(&indexed_header, &entries, crash_report.as_ref(), &stacktraces);
+    let exit_code = entries.last().map(|e| extract_exit_code(&e.contents)).unwrap_or_else(|| extract_exit_code(&header_buffer));
+
+    let mut issues = find_issues(&indexed_header, &entries, crash_report.as_ref(), &stacktraces, exit_code.map(|(_lang, code)| code));
 
     let mut jre_fatal_error: Option<JreFatalError> = None;
     if let Some(report) = JreFatalError::parse(&header_buffer) {
@@ -107,8 +109,6 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
             break;
         }
     }
-
-    let exit_code = entries.last().map(|e| extract_exit_code(&e.contents)).unwrap_or_else(|| extract_exit_code(&header_buffer));
 
     Ok(ReadLog {
         launcher_info,
@@ -139,7 +139,7 @@ pub fn find_exception_locations<R: BufRead>(mut reader: R) -> Option<Vec<String>
     Some(lines)
 }
 
-fn find_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry], crash_report: Option<&CrashReport>, stacktraces: &[Stacktrace]) -> Vec<Issue> {
+fn find_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry], crash_report: Option<&CrashReport>, stacktraces: &[Stacktrace], exit_code: Option<i32>) -> Vec<Issue> {
     let mut issues = Vec::new();
     
     for header_check in CHECKS_HEADER {
@@ -196,6 +196,15 @@ fn find_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry], crash_report
         }
         for entry in entries {
             if let Some(issue) = text_check(&entry.contents) {
+                issues.push(issue);
+            }
+        }
+    }
+
+    if let Some(code) = exit_code {
+        for build_exit_code_check in CHECKS_EXIT_CODE {
+            let exit_code_check = build_exit_code_check(header);
+            if let Some(issue) = exit_code_check(code) {
                 issues.push(issue);
             }
         }

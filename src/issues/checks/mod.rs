@@ -1,4 +1,4 @@
-use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader, issues::{checks::intel_hd::intel_hd_entry, issue::Issue}, parse::{crash_report::CrashReport, stacktrace::model::Stacktrace}};
+use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader, issues::{checks::{intel_hd::intel_hd_entry, oom::oom_exit_code}, issue::Issue}, parse::{crash_report::CrashReport, stacktrace::model::Stacktrace}};
 
 pub mod flatpak_nvidia;
 pub mod fabric_internal;
@@ -166,5 +166,12 @@ pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&
     },
     |_header| { 
         Box::new(|entry| shader_compile_error::shader_compile_error(entry)) 
+    },
+];
+
+#[allow(dead_code)]
+pub const CHECKS_EXIT_CODE: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(i32) -> Option<Issue>>; 1] = [
+    |_header| { 
+        Box::new(oom::oom_exit_code) 
     },
 ];
