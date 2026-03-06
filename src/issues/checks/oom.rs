@@ -11,6 +11,7 @@ pub(crate) fn oom(text: &str) -> Option<Issue> {
     return None;
 }
 
+// According to: https://minecrafthopper.net/help/exit-code/code-805306369/
 pub(crate) fn oom_exit_code(exit_code: i32) -> Option<Issue> {
     (exit_code == -805306369).then_some(Issue::Oom)
 }
