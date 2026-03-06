@@ -1,18 +1,21 @@
 name: Rust
-
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
+      with:
+        lfs: true
+        lfs-fetch-depth: 0
+    - name: Setup Git LFS
+      run: git lfs install
+    - name: Pull LFS files
+      run: git lfs pull
     - name: Build
       run: cargo build --verbose
     - name: Run tests
