@@ -34,4 +34,20 @@ Caused by: org.spongepowered.asm.mixin.injection.throwables.InvalidInjectionExce
         let issue = mixin_apply_failure_stacktraces(&stacktraces).expect("Failed to detect issue");
         assert_eq!(issue, Issue::MixinApplyFailure("shouldersurfing".to_string()));
     }
+
+    #[test]
+    fn example_2() {
+        let text = r#"	at TRANSFORMER/minecraft@1.21.1/net.minecraft.client.main.Main.main(Main.java:186)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	... 20 more
+Caused by: org.spongepowered.asm.mixin.throwables.MixinApplyError: Mixin [mixins.modmenu.json:MixinTitleScreen from mod modmenu] from phase [DEFAULT] in config [mixins.modmenu.json] FAILED during APPLY
+	at MC-BOOTSTRAP/org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer.MixinProcessor.handleMixinError(MixinProcessor.java:638)
+	at MC-BOOTSTRAP/org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer.MixinProcessor.handleMixinApplyError(MixinProcessor.java:589)
+	at MC-BOOTSTRAP/org.spongepowered.mixin/org.spongepowered.asm.mixin.transformer.MixinProcessor.applyMixins(MixinProcessor.java:379)
+	... 40 more
+"#;
+        let stacktraces: Vec<Stacktrace> = Stacktrace::from_lines(text.lines()).collect();
+        let issue = mixin_apply_failure_stacktraces(&stacktraces).expect("Failed to detect issue");
+        assert_eq!(issue, Issue::MixinApplyFailure("modmenu".to_string()));
+    }
 }

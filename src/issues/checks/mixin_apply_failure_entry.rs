@@ -1,4 +1,4 @@
-use crate::{entries::entry::LogEntry, issues::issue::Issue, parse::stacktrace::model::Stacktrace};
+use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
 pub(crate) fn mixin_apply_failure_entry(entry: &LogEntry) -> Option<Issue> {
     let (mod_name, _rest) = entry
