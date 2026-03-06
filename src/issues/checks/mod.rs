@@ -1,4 +1,4 @@
-use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader, issues::{checks::{intel_hd::intel_hd_entry, oom::oom_exit_code}, issue::Issue}, parse::{crash_report::CrashReport, stacktrace::model::Stacktrace}};
+use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader, issues::{checks::{intel_hd::intel_hd_entry, mixin_apply_failure_stacktraces::mixin_apply_failure_stacktraces, oom::oom_exit_code}, issue::Issue}, parse::{crash_report::CrashReport, stacktrace::model::Stacktrace}};
 
 pub mod flatpak_nvidia;
 pub mod fabric_internal;
@@ -36,7 +36,8 @@ pub mod entrypoint_execution_errors;
 pub mod critical_injection_failure;
 pub mod mods_in_stacktrace_namespace;
 pub mod mods_in_stacktrace_info;
-pub mod mixin_apply_failure;
+pub mod mixin_apply_failure_entry;
+pub mod mixin_apply_failure_stacktraces;
 pub mod instance_update_failed;
 pub mod error_initialization_vm;
 
@@ -64,7 +65,7 @@ pub const CHECKS_CRASH_REPORT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_LAST_STACKTRACES: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&[Stacktrace]) -> Option<Issue>>; 3] = [
+pub const CHECKS_LAST_STACKTRACES: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&[Stacktrace]) -> Option<Issue>>; 4] = [
     |_header| {
         Box::new(move |stacktraces| { entrypoint_execution_errors::entrypoint_execution_errors(&stacktraces) })
     },
@@ -73,7 +74,7 @@ pub const CHECKS_LAST_STACKTRACES: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn
             Box::new(move |stacktraces| { mods_in_stacktrace_namespace::check_mods_in_stacktrace_namespace(&mod_lookup_map, &stacktraces) })
         }
         else {
-            Box::new(|_report| { None })
+            Box::new(|_stacktraces| { None })
         }
     },
     |header| {
@@ -81,8 +82,11 @@ pub const CHECKS_LAST_STACKTRACES: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn
             Box::new(move |stacktraces| { mods_in_stacktrace_info::check_mods_in_stacktrace_info(&mods, &stacktraces) })
         }
         else {
-            Box::new(|_report| { None })
+            Box::new(|_stacktraces| { None })
         }
+    },
+    |_header| {
+        Box::new(|stacktraces| { mixin_apply_failure_stacktraces::mixin_apply_failure_stacktraces(stacktraces) })
     },
 ];
 
@@ -143,7 +147,7 @@ pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&
         Box::new(|entry| missing_xrandr::missing_xrandr(entry)) 
     },
     |_header| { 
-        Box::new(|entry| mixin_apply_failure::mixin_apply_failure(entry)) 
+        Box::new(|entry| mixin_apply_failure_entry::mixin_apply_failure_entry(entry)) 
     },
     |_header| { 
         Box::new(|entry| native_transport::pre_1_12_native_transport_java_9(entry)) 

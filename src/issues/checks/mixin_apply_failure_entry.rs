@@ -1,8 +1,11 @@
-use crate::{entries::entry::LogEntry, issues::issue::Issue};
+use crate::{entries::entry::LogEntry, issues::issue::Issue, parse::stacktrace::model::Stacktrace};
 
-pub(crate) fn mixin_apply_failure(entry: &LogEntry) -> Option<Issue> {
-   let (mod_name, _rest) = entry.contents.strip_prefix("Mixin apply for mod ")?.split_once(" failed ")?;
-   Some(Issue::MixinApplyFailure(mod_name.to_string()))
+pub(crate) fn mixin_apply_failure_entry(entry: &LogEntry) -> Option<Issue> {
+    let (mod_name, _rest) = entry
+        .contents
+        .strip_prefix("Mixin apply for mod ")?
+        .split_once(" failed ")?;
+    Some(Issue::MixinApplyFailure(mod_name.to_string()))
 }
 
 #[cfg(test)]
@@ -45,11 +48,15 @@ org.spongepowered.asm.mixin.transformer.throwables.InvalidMixinException: @Shado
 	at org.prismlauncher.EntryPoint.listen(EntryPoint.java:129)
 	at org.prismlauncher.EntryPoint.main(EntryPoint.java:70)"#;
         let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
-        let issue = entries.iter().filter_map(|e| mixin_apply_failure(e)).next().expect("Failed to determine issue");
+        let issue = entries
+            .iter()
+            .filter_map(|e| mixin_apply_failure_entry(e))
+            .next()
+            .expect("Failed to determine issue");
         assert_eq!(issue, Issue::MixinApplyFailure("owo".to_string()));
     }
 
-        #[test]
+    #[test]
     fn example_2() {
         let text = r#"[20:52:08] [Render thread/ERROR]: Mixin apply for mod fightorflight failed fightorflight.mixins_common.json:PokemonEntityMixin from mod fightorflight -> com.cobblemon.mod.common.entity.pokemon.PokemonEntity: org.spongepowered.asm.mixin.injection.throwables.InvalidInjectionException Critical injection failure: @Inject annotation on registerFOFGoals could not find any targets matching 'Lcom/cobblemon/mod/common/entity/pokemon/PokemonEntity;method_5959()V' in com/cobblemon/mod/common/entity/pokemon/PokemonEntity. Using refmap fightorflight-common-refmap.json [INJECT_PREPARE Applicator Phase -> fightorflight.mixins_common.json:PokemonEntityMixin from mod fightorflight -> Prepare Injections -> handler$cmg000$fightorflight$registerFOFGoals(Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V -> Parse ->  -> Validate Targets]
 org.spongepowered.asm.mixin.injection.throwables.InvalidInjectionException: Critical injection failure: @Inject annotation on registerFOFGoals could not find any targets matching 'Lcom/cobblemon/mod/common/entity/pokemon/PokemonEntity;method_5959()V' in com/cobblemon/mod/common/entity/pokemon/PokemonEntity. Using refmap fightorflight-common-refmap.json [INJECT_PREPARE Applicator Phase -> fightorflight.mixins_common.json:PokemonEntityMixin from mod fightorflight -> Prepare Injections -> handler$cmg000$fightorflight$registerFOFGoals(Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V -> Parse ->  -> Validate Targets]
@@ -90,7 +97,11 @@ org.spongepowered.asm.mixin.injection.throwables.InvalidInjectionException: Crit
 	at org.prismlauncher.EntryPoint.listen(EntryPoint.java:129) [NewLaunch.jar:?]
 	at org.prismlauncher.EntryPoint.main(EntryPoint.java:70) [NewLaunch.jar:?]"#;
         let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
-        let issue = entries.iter().filter_map(|e| mixin_apply_failure(e)).next().expect("Failed to determine issue");
+        let issue = entries
+            .iter()
+            .filter_map(|e| mixin_apply_failure_entry(e))
+            .next()
+            .expect("Failed to determine issue");
         assert_eq!(issue, Issue::MixinApplyFailure("fightorflight".to_string()));
     }
 }
