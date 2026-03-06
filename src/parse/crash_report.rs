@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, thread::park};
 
 use crate::{entries::time::LogTime, parse::stacktrace::model::Stacktrace};
 
@@ -76,13 +76,34 @@ mod tests {
 
 
     #[test]
-    fn simple() {
+    fn crash_1() {
         let text = include_str!("test_data/crash_1.log");
         let report = CrashReport::parse(text).expect("Failed to parse crash report");
         let stacktrace = &report.stacktrace[0];
         assert_eq!(stacktrace.exception, "java.lang.IllegalAccessError");
         assert_eq!(stacktrace.message, "class net.minecraft.class_1703 tried to access private field net.minecraft.class_1661.field_7545 (net.minecraft.class_1703 and net.minecraft.class_1661 are in unnamed module of loader 'knot' @40e6dfe1)");
-        dbg!(&report);
+        let sytem_details = report.sections.get("System Details").expect("Failed to get System Details section");
+        let _tree = SectionTree::parse(sytem_details).expect("Failed to parse system details");
+    }
+
+    #[test]
+    fn crash_2() {
+        let text = include_str!("test_data/crash_2.log");
+        let report = CrashReport::parse(text).expect("Failed to parse crash report");
+        let stacktrace = &report.stacktrace[0];
+        assert_eq!(stacktrace.exception, "java.lang.RuntimeException");
+        assert_eq!(stacktrace.message, "Could not execute entrypoint stage 'client' due to errors, provided by 'betteradvancements' at 'betteradvancements.fabric.BetterAdvancements'!");
+        let sytem_details = report.sections.get("System Details").expect("Failed to get System Details section");
+        let _tree = SectionTree::parse(sytem_details).expect("Failed to parse system details");
+    }
+
+    #[test]
+    fn crash_5() {
+        let text = include_str!("test_data/crash_5.log");
+        let report = CrashReport::parse(text).expect("Failed to parse crash report");
+        let stacktrace = &report.stacktrace[0];
+        assert_eq!(stacktrace.exception, "java.lang.NullPointerException");
+        assert_eq!(stacktrace.message, "Initializing game");
         let sytem_details = report.sections.get("System Details").expect("Failed to get System Details section");
         let _tree = SectionTree::parse(sytem_details).expect("Failed to parse system details");
     }

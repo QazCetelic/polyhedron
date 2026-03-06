@@ -23,14 +23,15 @@ impl LogTime {
         if let Some(time) = Self::parse_rfc_3339(time_str) {
             return Some(time);
         }
-        let (without_suffix, _is_pm) = strip_meridiem(time_str);
+        let (without_suffix, meridiem) = strip_meridiem(time_str);
         let (date, time_part) = if let Some((date_str, time_str)) = without_suffix.split_once(' ') {
-            (Some(LogDate::parse(date_str)?), time_str)
+            (Some(LogDate::parse(date_str, meridiem.is_some())?), time_str)
         }
         else {
             (None, without_suffix)
         };
-        let (hour, minute, second, millisecond) = parse_time(time_part)?;
+        let (hour_original, minute, second, millisecond) = parse_time(time_part)?;
+        let hour = if let Some(meridiem) = meridiem && hour_original <= 12 && meridiem { hour_original + 12 } else { hour_original };
         let time = LogTime {
             date,
             hour,
@@ -79,10 +80,15 @@ fn parse_time(time: &str) -> Option<(u8, u8, u8, Option<u16>)> {
         (time, None)
     };
     let (hour_str, minute_and_second) = hms_part.split_once(':')?;
-    let (minute_str, second_str) = minute_and_second.split_once(':')?;
+    let (minute_str, second_str) = if let Some((min, sec)) = minute_and_second.split_once(':') {
+        (min, Some(sec))
+    }
+    else {
+        (minute_and_second, None)
+    };
     let hour: u8 = hour_str.parse().ok()?;
     let minute: u8 = minute_str.parse().ok()?;
-    let second: u8 = second_str.parse().ok()?;
+    let second: u8 = if let Some(sec) = second_str { sec.parse().ok()? } else { 0 }; // Set 0 if seconds are missing
     Some((hour, minute, second, millisecond))
 }
 
@@ -118,6 +124,19 @@ fn parse_eu_date(date: &str) -> Option<LogDate> {
     Some(LogDate { day, month, year })
 }
 
+// "02/12/25" -> {2025, 02, 12}
+fn parse_us_date(date: &str) -> Option<LogDate> {
+    let (month_str, day_and_year) = date.split_once('/')?;
+    let (day_str, year_str) = day_and_year.split_once('/')?;
+    let day: u8 = day_str.parse().ok()?;
+    let month: u8 = month_str.parse().ok()?;
+    fn correct_year(y: u16) -> u16 { // 25 -> 2025
+        if y < 1000 { y + 2000 } else { y }
+    }
+    let year: u16 = correct_year(year_str.parse().ok()?);
+    Some(LogDate { day, month, year })
+}
+
 // "04Dec2025" -> {2025, 12, 04}
 fn parse_named_month_date(date: &str) -> Option<LogDate> {
     if date.len() < 9 {
@@ -144,19 +163,19 @@ fn parse_named_month_date(date: &str) -> Option<LogDate> {
 }
 
 /// Strips " AM" or " PM" suffix from the time string and indicates if it was PM.
-fn strip_meridiem(time_str: &str) -> (&str, bool) {
+fn strip_meridiem(time_str: &str) -> (&str, Option<bool>) {
     if let Some(stripped) = time_str.strip_suffix(" AM") {
-        (stripped, false)
+        (stripped, Some(false))
     } else if let Some(stripped) = time_str.strip_suffix(" PM") {
-        (stripped, true)
+        (stripped, Some(true))
     } else {
-        (time_str, false)
+        (time_str, None)
     }
 }
 
 /// O(1) parses date strings in various formats
 impl LogDate {
-    fn parse(date_str: &str) -> Option<LogDate> {
+    fn parse(date_str: &str, includes_meridiem: bool) -> Option<LogDate> {
         if date_str.len() > 23 {
             // "12Sept2025 00:41:16.572"
             return None;
@@ -164,13 +183,20 @@ impl LogDate {
         else if let Some(date) = parse_iso_date(date_str) {
             Some(date)
         }
-        else if let Some(date) = parse_eu_date(date_str) {
-            Some(date)
-        }
-        else if let Some(date) = parse_named_month_date(date_str) {
-            Some(date)
-        }
         else {
+            if includes_meridiem {
+                if let Some(date) = parse_us_date(date_str) {
+                    return Some(date);
+                }
+            }
+            else {
+                if let Some(date) = parse_eu_date(date_str) {
+                    return Some(date);
+                }
+            }
+            if let Some(date) = parse_named_month_date(date_str) {
+                return Some(date);
+            }
             None
         }
     }
@@ -214,7 +240,7 @@ mod tests {
     fn date() {
         let time_str = "02/12/2025 14:45:51 PM";
         let time = LogTime::parse(time_str).expect("Failed to parse date and time");
-        assert_eq!(time.date.map(|d| (d.day, d.month, d.year)), Some((2, 12, 2025)));
+        assert_eq!(time.date.map(|d| (d.day, d.month, d.year)), Some((12, 02, 2025)));
         assert_eq!(time.hour, 14);
         assert_eq!(time.minute, 45);
         assert_eq!(time.second, 51);
@@ -256,29 +282,32 @@ mod tests {
     #[test]
     fn various() {
         let examples = vec![
-            "01:53:30",
-            "01:54:42",
-            "01:56:17",
-            "02/12/2025 14:45:51 PM",
-            "02/12/2025 15:05:28 PM",
-            "02/12/2025 15:05:29 PM",
-            "04Aug2025 17:45:36.659",
-            "04Aug2025 17:45:36.946",
-            "04Dec2025 20:16:35.371",
-            "04Dec2025 20:16:36.602",
-            "24Sep2025 10:54:01.697",
-            "16Sept2025 23:44:52.173", // <-- Yes, that t isn't a typo
-            "12Oct2025 00:41:16.062",
-            "12Oct2025 00:41:16.572",
-            "12Sept2025 00:41:16.572",
-            "2025-10-30T19:21:06.036061Z",
-            "08:01:29.968",
-            "08:33:03.106",
-            "08:33:03.471",
-            "2024-07-11 04:30:53",
+            ("01:53:30", "01:53:30"),
+            ("01:54:42", "01:54:42"),
+            ("01:56:17", "01:56:17"),
+            ("02/12/2025 14:45:51 PM", "2025-02-12 14:45:51"),
+            ("02/12/2025 15:05:28 PM", "2025-02-12 15:05:28"),
+            ("02/12/2025 15:05:29 PM", "2025-02-12 15:05:29"),
+            ("04Aug2025 17:45:36.659", "2025-08-04 17:45:36.659"),
+            ("04Aug2025 17:45:36.946", "2025-08-04 17:45:36.946"),
+            ("04Dec2025 20:16:35.371", "2025-12-04 20:16:35.371"),
+            ("04Dec2025 20:16:36.602", "2025-12-04 20:16:36.602"),
+            ("24Sep2025 10:54:01.697", "2025-09-24 10:54:01.697"),
+            ("16Sept2025 23:44:52.173", "2025-09-16 23:44:52.173"), // Note: handles "Sept" with 't'
+            ("12Oct2025 00:41:16.062", "2025-10-12 00:41:16.062"),
+            ("12Oct2025 00:41:16.572", "2025-10-12 00:41:16.572"),
+            ("12Sept2025 00:41:16.572", "2025-09-12 00:41:16.572"),
+            ("2025-10-30T19:21:06.036061Z", "2025-10-30 19:21:06.036"),
+            ("08:01:29.968", "08:01:29.968"),
+            ("08:33:03.106", "08:33:03.106"),
+            ("08:33:03.471", "08:33:03.471"),
+            ("2024-07-11 04:30:53", "2024-07-11 04:30:53"),
+            ("12/20/25 6:11 PM", "2025-12-20 18:11:00"),
         ];
-        for time_str in examples {
-            let _time = LogTime::parse(time_str).expect(&format!("Failed to parse time: {}", time_str));
+
+        for (input, expected_output) in examples {
+            let parsed = LogTime::parse(input).unwrap_or_else(|| panic!("Failed to parse time: {}", input));
+            assert_eq!(parsed.to_string(), expected_output, "Failed for input: {}", input);
         }
     }
 }
