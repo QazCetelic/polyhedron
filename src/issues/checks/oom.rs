@@ -1,7 +1,14 @@
-use crate::{entries::entry::LogEntry, issues::issue::Issue};
+use crate::issues::issue::Issue;
 
-pub(crate) fn oom(entry: &LogEntry) -> Option<Issue> {
-    entry.contents.contains("java.lang.OutOfMemoryError").then_some(Issue::Oom)
+pub(crate) fn oom(text: &str) -> Option<Issue> {
+    // # There is insufficient memory for the Java Runtime Environment to continue.
+    if text.contains("java.lang.OutOfMemoryError") {
+        return Some(Issue::Oom)
+    }
+    if text.contains("# There is insufficient memory for the Java Runtime Environment to continue.") {
+        return Some(Issue::Oom)
+    }
+    return None;
 }
 
 #[cfg(test)]
@@ -9,7 +16,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn matches_oom() {
+    fn java_exception() {
         // Text starts after header
         let text = "[20:00:45] [Render thread/ERROR]: Out of memory
 java.lang.OutOfMemoryError: null
@@ -45,8 +52,20 @@ java.lang.OutOfMemoryError: null
     at org.prismlauncher.EntryPoint.listen(EntryPoint.java:126) ~[NewLaunch.jar:?]
     at org.prismlauncher.EntryPoint.main(EntryPoint.java:71) ~[NewLaunch.jar:?]
 ";
-        let entries: Vec<LogEntry> = LogEntry::from_lines(text.lines());
-        let issue = entries.iter().filter_map(|e| oom(e)).next().expect("Failed to determine issue");
+        let issue = oom(text).expect("Failed to determine issue");
+        assert_eq!(issue, Issue::Oom);
+    }
+
+    #[test]
+    fn insufficient_memory_jre() {
+        let text = r#"  Patching net/minecraft/world/item/Items$1 1/1
+OpenJDK 64-Bit Server VM warning: INFO: os::commit_memory(0x0000000795800000, 721420288, 0) failed; error='The paging file is too small for this operation to complete' (DOS error/errno=1455)
+#
+# There is insufficient memory for the Java Runtime Environment to continue.
+# Native memory allocation (mmap) failed to map 721420288 bytes. Error detail: G1 virtual space
+# An error report file with more information is saved as:
+# C:\Users\********\AppData\Roaming\PrismLauncher\instances\Mijoma's Additional Additions\minecraft\hs_err_pid104756.log"#;
+        let issue = oom(text).expect("Failed to determine issue");
         assert_eq!(issue, Issue::Oom);
     }
 }

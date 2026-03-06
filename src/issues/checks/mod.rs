@@ -40,7 +40,7 @@ pub mod mixin_apply_failure;
 pub mod instance_update_failed;
 
 #[allow(dead_code)]
-pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) -> Option<Issue>>; 3] = [
+pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) -> Option<Issue>>; 4] = [
     |_header| { 
         Box::new(fabric_internal::fabric_internal) 
     },
@@ -49,7 +49,10 @@ pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) ->
     },
     |_header| { 
         Box::new(x11_connect_failure::x11_connect_failure) 
-    }
+    },
+    |_header| { 
+        Box::new(oom::oom) 
+    },
 ];
 
 #[allow(dead_code)]
@@ -102,7 +105,7 @@ pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 9]
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&LogEntry) -> Option<Issue>>; 21] = [
+pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&LogEntry) -> Option<Issue>>; 20] = [
     |header| {
         let java_version = header.get_java_version();
         Box::new(move |entry| intel_hd_entry(entry, java_version.as_ref()))
@@ -151,9 +154,6 @@ pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&
     },
     |_header| { 
         Box::new(|entry| old_java_macos::old_java_macos(entry)) 
-    },
-    |_header| { 
-        Box::new(|entry| oom::oom(entry)) 
     },
     |_header| { 
         Box::new(|entry| lwjgl_2_java_9::lwjgl_2_java_9_entry(entry)) 
