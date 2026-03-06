@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use crate::{header::extract::ModInfo, issues::issue::Issue, parse::{crash_report::CrashReport, stacktrace::model::Stacktrace}};
+use crate::{header::extract::ModInfo, issues::issue::Issue, parse::stacktrace::model::Stacktrace};
 
 pub(crate) fn check_mods_in_stacktrace_info<'a>(mods_in_header: &[ModInfo], stacktraces: &[Stacktrace]) -> Option<Issue> {
     let mods_set = mods_in_header.iter().filter(|m| m.enabled).map(|m| m.name.to_string()).collect::<BTreeSet<String>>();
@@ -21,7 +21,7 @@ pub(crate) fn check_mods_in_stacktrace_info<'a>(mods_in_header: &[ModInfo], stac
 
 #[cfg(test)]
 mod tests {
-    use crate::header::index::IndexedLogHeader;
+    use crate::{header::index::IndexedLogHeader, parse::crash_report::CrashReport};
 
     use super::*;
 

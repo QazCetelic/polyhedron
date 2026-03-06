@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, thread::park};
+use std::collections::BTreeMap;
 
 use crate::{entries::time::LogTime, parse::stacktrace::model::Stacktrace};
 

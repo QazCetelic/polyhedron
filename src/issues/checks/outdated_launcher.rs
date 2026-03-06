@@ -6,6 +6,7 @@ fn outdated_launcher(launcher_info: &LauncherInfo, latest_version: &str) -> Opti
     (used_version < latest_version).then_some(Issue::OutdatedLauncher)
 }
 
+#[allow(dead_code)]
 pub(crate) fn outdated_launcher_header(header: &IndexedLogHeader) -> Option<Issue> {
     const LAST_KNOWN_VERSION: &str = "10.0.5"; // I don't want it to depend on network requests so we just hardcode it
     let launcher_info = LauncherInfo::from_first_line(header.text)?;

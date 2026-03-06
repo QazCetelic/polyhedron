@@ -1,4 +1,4 @@
-use crate::{issues::issue::Issue, parse::{crash_report::CrashReport, stacktrace::model::Stacktrace}};
+use crate::{issues::issue::Issue, parse::stacktrace::model::Stacktrace};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -26,6 +26,8 @@ pub(crate) fn entrypoint_execution_errors(stacktraces: &[Stacktrace]) -> Option<
 
 #[cfg(test)]
 mod tests {
+    use crate::parse::crash_report::CrashReport;
+
     use super::*;
 
     #[test]
