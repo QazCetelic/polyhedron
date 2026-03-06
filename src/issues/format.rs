@@ -189,7 +189,7 @@ pub fn format_issue(issue: &Issue) -> FormattedIssueInfo {
         Issue::FatalErrorJre(jre_fatal_error) => {
             FormattedIssueInfo {
                 title: "Java Runtime Environment had a fatal error".to_string(),
-                description: format!("Error:\n{}Contents:{:.75}", jre_fatal_error.error, jre_fatal_error.contents),
+                description: format!("Error:\n{}Contents:{:.100}", jre_fatal_error.error, jre_fatal_error.contents),
             }
         },
         Issue::InstanceUpdateFailed(reason) => {
