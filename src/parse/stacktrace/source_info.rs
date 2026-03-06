@@ -4,7 +4,8 @@ use crate::parse::stacktrace::model::StacktraceLine;
 
 #[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "dioxius", derive(Clone, PartialEq))]
+#[cfg_attr(feature = "dioxus", derive(Clone, PartialEq))]
+#[allow(dead_code)]
 pub struct JarPosition {
     pub(crate) position: usize,
     pub(crate) char: char,
@@ -12,7 +13,8 @@ pub struct JarPosition {
 
 #[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "dioxius", derive(Clone, PartialEq))]
+#[cfg_attr(feature = "dioxus", derive(Clone, PartialEq))]
+#[allow(dead_code)]
 pub struct StacktraceLineSourceInfo {
     pub(crate) source_name: String, // Can end with .jar or .java
     pub(crate) jar_position: Option<JarPosition>,

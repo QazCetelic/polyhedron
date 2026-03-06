@@ -3,7 +3,7 @@ use crate::header::{extract::{JavaVersionInfo, LibraryInfo, ModInfo}, index::Ind
 #[allow(dead_code)]
 /// All extractable info from header.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "dioxius", derive(Clone, PartialEq))]
+#[cfg_attr(feature = "dioxus", derive(Clone, PartialEq))]
 pub struct LogHeaderInfo {
     pub online_mode: Option<bool>,
     pub mc_folder_location: Option<String>,
