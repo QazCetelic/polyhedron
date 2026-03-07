@@ -110,6 +110,8 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
         }
     }
 
+    issues.dedup();
+
     Ok(ReadLog {
         launcher_info,
         header: header_buffer,
