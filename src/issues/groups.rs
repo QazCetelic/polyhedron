@@ -70,7 +70,7 @@ pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 10
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&LogEntry) -> Option<Issue>>; 20] = [
+pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&LogEntry) -> Option<Issue>>; 23] = [
     |header| {
         let java_version = header.get_java_version();
         Box::new(move |entry| intel_hd::intel_hd_entry(entry, java_version.as_ref()))
@@ -131,6 +131,15 @@ pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&
     },
     |_header| { 
         Box::new(|entry| shader_compile_error::shader_compile_error(entry)) 
+    },
+    |_header| { 
+        Box::new(|entry| wrong_java::class_file_version_not_supported(entry)) 
+    },
+    |_header| { 
+        Box::new(|entry| wrong_java::argument_exception_class_file_version(entry)) 
+    },
+    |_header| { 
+        Box::new(|entry| wrong_java::unsupported_class_version(entry)) 
     },
 ];
 
