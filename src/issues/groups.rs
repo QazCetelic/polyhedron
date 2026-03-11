@@ -24,7 +24,7 @@ pub const CHECKS_CRASH_REPORT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_LAST_STACKTRACES: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&[Stacktrace]) -> Option<Issue>>; 4] = [
+pub const CHECKS_LAST_STACKTRACES: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&[Stacktrace]) -> Option<Issue>>; 5] = [
     |_header| {
         Box::new(move |stacktraces| { entrypoint_execution_errors::entrypoint_execution_errors(&stacktraces) })
     },
@@ -46,6 +46,9 @@ pub const CHECKS_LAST_STACKTRACES: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn
     },
     |_header| {
         Box::new(|stacktraces| { mixin_apply_failure_stacktraces::mixin_apply_failure_stacktraces(stacktraces) })
+    },
+    |_header| {
+        Box::new(|stacktraces| { zip_extract_failure::zip_extract_failure(stacktraces) })
     },
 ];
 

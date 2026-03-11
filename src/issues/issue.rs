@@ -90,4 +90,6 @@ pub enum Issue {
     InstanceUpdateFailed(String),
     #[error("Error occurred during initialization of VM")]
     ErrorInitializationVM,
+    #[error("Zip extract failure")]
+    ZipExtractFailure,
 }

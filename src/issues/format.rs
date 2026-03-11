@@ -204,5 +204,11 @@ pub fn format_issue(issue: &Issue) -> FormattedIssueInfo {
                 description: "".to_string(),
             }
         },
+        Issue::ZipExtractFailure => {
+            FormattedIssueInfo {
+                title: "Failed to extract Zip file".to_string(),
+                description: "".to_string(),
+            }
+        },
     }
 }
