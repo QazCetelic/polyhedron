@@ -1,5 +1,6 @@
 use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct IncompatibleModsInfo {
     pub solution: String,
