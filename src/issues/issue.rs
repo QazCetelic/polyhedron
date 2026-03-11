@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 use thiserror::Error;
-use crate::{issues::checks::{critical_injection_failure::CriticalInjectionFailure, entrypoint_execution_errors::EntrypointExecutionErrors, suspected_mod::SuspectedModInfo}, parse::jre_fatal::JreFatalError};
+use crate::{issues::checks::{critical_injection_failure::CriticalInjectionFailure, entrypoint_execution_errors::EntrypointExecutionErrors, incompatible_mods::IncompatibleModsInfo, suspected_mod::SuspectedModInfo}, parse::jre_fatal::JreFatalError};
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Error, Debug, PartialEq, Eq, Clone)]
@@ -92,4 +92,6 @@ pub enum Issue {
     ErrorInitializationVM,
     #[error("Zip extract failure")]
     ZipExtractFailure,
+    #[error("Incompatible mods")]
+    IncompatibleMods(Box<IncompatibleModsInfo>),
 }

@@ -2,7 +2,7 @@ use std::io::{BufRead, ErrorKind};
 
 use thiserror::Error;
 
-use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{groups::{CHECKS_ALL_STACKTRACES, CHECKS_CRASH_REPORT, CHECKS_ENTRIES, CHECKS_EXIT_CODE, CHECKS_HEADER, CHECKS_LAST_STACKTRACES, CHECKS_TEXT}, issue::Issue}, parse::{crash_report::CrashReport, exit_code::extract_exit_code, jre_fatal::JreFatalError, stacktrace::model::Stacktrace}};
+use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{groups::{CHECKS_ALL_STACKTRACES, CHECKS_CRASH_REPORT, CHECKS_ENTRIES, CHECKS_EXIT_CODE, CHECKS_HEADER, CHECKS_LAST_ENTRIES, CHECKS_LAST_STACKTRACES, CHECKS_TEXT}, issue::Issue}, parse::{crash_report::CrashReport, exit_code::extract_exit_code, jre_fatal::JreFatalError, stacktrace::model::Stacktrace}};
 
 pub mod entries;
 pub mod header;
@@ -185,6 +185,14 @@ fn find_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry], crash_report
     for build_entry_check in CHECKS_ENTRIES {
         let entry_check = build_entry_check(header);
         for entry in entries {
+            if let Some(issue) = entry_check(entry) {
+                issues.push(issue);
+            }
+        }
+    }
+    for build_entry_check in CHECKS_LAST_ENTRIES {
+        let entry_check = build_entry_check(header);
+        for entry in entries.iter().rev().take(10) {
             if let Some(issue) = entry_check(entry) {
                 issues.push(issue);
             }

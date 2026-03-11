@@ -53,6 +53,13 @@ pub const CHECKS_LAST_STACKTRACES: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn
 ];
 
 #[allow(dead_code)]
+pub const CHECKS_LAST_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&LogEntry) -> Option<Issue>>; 1] = [
+    |_header| {
+        Box::new(|stacktraces| { incompatible_mods::incompatible_mods(stacktraces) })
+    },
+];
+
+#[allow(dead_code)]
 pub const CHECKS_ALL_STACKTRACES: [fn(&Stacktrace) -> Option<Issue>; 1] = [
     critical_injection_failure::critical_injection_failure,
 ];

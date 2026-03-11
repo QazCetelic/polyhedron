@@ -40,3 +40,4 @@ pub mod mixin_apply_failure_stacktraces;
 pub mod instance_update_failed;
 pub mod error_initialization_vm;
 pub mod zip_extract_failure;
+pub mod incompatible_mods;

@@ -210,5 +210,11 @@ pub fn format_issue(issue: &Issue) -> FormattedIssueInfo {
                 description: "".to_string(),
             }
         },
+        Issue::IncompatibleMods(info) => {
+            FormattedIssueInfo {
+                title: "Incompatible mods found".to_string(),
+                description: format!("Solution:\n{}\nDetails:\n{}", info.solution, info.details),
+            }
+        },
     }
 }
