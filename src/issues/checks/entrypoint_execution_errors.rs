@@ -4,7 +4,7 @@ use crate::{issues::issue::Issue, parse::stacktrace::model::Stacktrace};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct EntrypointExecutionErrors {
     pub method: String,
-    pub mod_name: String,
+    pub normalized_mod_name: String,
     pub class_name: String,
 }
 
@@ -17,7 +17,7 @@ pub(crate) fn entrypoint_execution_errors(stacktraces: &[Stacktrace]) -> Option<
 
     let errors = EntrypointExecutionErrors {
         method: method.to_string(),
-        mod_name: mod_name.to_string(),
+        normalized_mod_name: mod_name.to_string(),
         class_name: class_name.to_string(),
     };
 
@@ -37,7 +37,7 @@ mod tests {
         let issue = entrypoint_execution_errors(&report.stacktrace).expect("Failed to find issue");
         let Issue::EntrypointExecutionErrors(errors) = issue else { panic!("Not the right issue"); };
         assert_eq!(errors.method, "client");
-        assert_eq!(errors.mod_name, "betteradvancements");
+        assert_eq!(errors.normalized_mod_name, "betteradvancements");
         assert_eq!(errors.class_name, "betteradvancements.fabric.BetterAdvancements");
     }
 }

@@ -11,7 +11,7 @@ pub enum Issue {
     FabricInternalAccess,
     #[error("Forge on zlib-ng")]
     LexforgeZlibng,
-    #[error("Forge Java Bug")]
+    #[error("Old Forge Java Bug")]
     ForgeJava,
     #[error("Intel HD Windows 10")]
     IntelHd,
@@ -32,7 +32,7 @@ pub enum Issue {
     NettyJavaAbove8,
     /// Argument is the recommended java version (major)
     #[error("Wrong Java Version")]
-    WrongJava(Option<u32>),
+    WrongJava(Option<u8>),
     #[error("Missing forge mod dependencies")]
     ForgeMissingDependencies,
     #[error("Modern Java version with an old Forge version, install LegacyJavaFixer")]

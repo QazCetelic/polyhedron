@@ -1,5 +1,6 @@
 use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
+// TODO only scan JRE fatal error
 pub(crate) fn old_java_macos(entry: &LogEntry) -> Option<Issue> {
    entry.contents.contains("~StubRoutines::SafeFetch32").then_some(Issue::OldJavaMacOs)
 }

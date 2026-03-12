@@ -1,8 +1,8 @@
-use std::io::{BufRead, ErrorKind};
+use std::{collections::BTreeSet, io::{BufRead, ErrorKind}};
 
 use thiserror::Error;
 
-use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{groups::{CHECKS_ALL_STACKTRACES, CHECKS_CRASH_REPORT, CHECKS_ENTRIES, CHECKS_EXIT_CODE, CHECKS_HEADER, CHECKS_LAST_ENTRIES, CHECKS_LAST_STACKTRACES, CHECKS_TEXT}, issue::Issue}, parse::{crash_report::CrashReport, exit_code::extract_exit_code, jre_fatal::JreFatalError, stacktrace::model::Stacktrace}};
+use crate::{entries::{entry::LogEntry, parser::LogEntryParser, prefix::LogPrefix}, header::{identify::LauncherInfo, index::{IndexedLogHeader, LogHeaderIndex}, info::LogHeaderInfo}, issues::{conclude::{RecommendedJavaVersion, collect_problematic_mods, recommend_java_version}, groups::{CHECKS_ALL_STACKTRACES, CHECKS_CRASH_REPORT, CHECKS_ENTRIES, CHECKS_EXIT_CODE, CHECKS_HEADER, CHECKS_LAST_ENTRIES, CHECKS_LAST_STACKTRACES, CHECKS_TEXT}, issue::Issue}, parse::{crash_report::CrashReport, exit_code::extract_exit_code, jre_fatal::JreFatalError, stacktrace::model::Stacktrace}};
 
 pub mod entries;
 pub mod header;
@@ -30,6 +30,8 @@ pub struct ReadLog {
     pub jre_fatal_error: Option<JreFatalError>,
     pub localization: Option<String>,
     pub exit_code: Option<i32>,
+    pub problematic_mods: BTreeSet<String>,
+    pub recommended_java_version: Option<RecommendedJavaVersion>,
 }
 
 pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
@@ -112,6 +114,9 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
 
     issues.dedup();
 
+    let problematic_mods = collect_problematic_mods(&issues, indexed_header.get_mod_name_lookup_map());
+    let recommended_java_version = recommend_java_version(&issues);
+
     Ok(ReadLog {
         launcher_info,
         header: header_buffer,
@@ -124,6 +129,8 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
         jre_fatal_error,
         localization: exit_code.map(|(lang, _code)| lang.to_string()),
         exit_code: exit_code.map(|(_lang, code)| code),
+        problematic_mods,
+        recommended_java_version,
     })
 }
 

@@ -157,7 +157,7 @@ pub fn format_issue(issue: &Issue) -> FormattedIssueInfo {
         Issue::EntrypointExecutionErrors(entrypoint_execution_errors) => {
             FormattedIssueInfo {
                 title: "Entrypoint Execution Errors".to_string(),
-                description: format!("There was an error during the entrypoint execution for mod {} at method {}", entrypoint_execution_errors.mod_name, entrypoint_execution_errors.method),
+                description: format!("There was an error during the entrypoint execution for mod {} at method {}", entrypoint_execution_errors.normalized_mod_name, entrypoint_execution_errors.method),
             }
         },
         Issue::CriticalInjectionFailure(critical_injection_failure) => {

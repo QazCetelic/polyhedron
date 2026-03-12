@@ -6,7 +6,7 @@ fn wrong_java(text: &str) -> Option<Issue> {
     let switch_version_regex = regex!(r"Please switch to one of the following Java versions for this instance:[\r\n]+(Java version [\d.]+)");
 
     if let Some(captures) = switch_version_regex.captures(text) {
-		let version = (&captures[1]).strip_prefix("Java version ")?.parse::<u32>().ok()?;
+		let version = (&captures[1]).strip_prefix("Java version ")?.parse::<u8>().ok()?;
 		Some(Issue::WrongJava(Some(version)))
 	}
     else if text.contains("Java major version is incompatible. Things might break.") {
