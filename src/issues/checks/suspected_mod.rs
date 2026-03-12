@@ -119,4 +119,23 @@ Stacktrace:
         let issue = check_suspected_mod_report_head(&crash_report_fragment);
         assert!(issue.is_none());
     }
+
+    #[test]
+    fn finds_single_suspected_mod() {
+        let crash_report_fragment = r#"
+-- Head --
+Thread: Render thread
+Suspected Mod: 
+	Alex's Mobs (alexsmobs), Version: 1.22.9
+		Issue tracker URL: https://github.com/Alex-the-666/AlexsMobs/issues
+		at TRANSFORMER/alexsmobs@1.22.9/com.github.alexthe666.alexsmobs.entity.ai.GorillaAIForageLeaves.breakLeaves(GorillaAIForageLeaves.java:87)
+Stacktrace:       
+"#;
+        let issue = check_suspected_mod_report_head(&crash_report_fragment).expect("Failed to find issue");
+        let Issue::ForgeSuspectedMod(suspected_mods) = issue else { panic!("Not the right issue"); };
+        assert_eq!(suspected_mods[0].mod_name, "Alex's Mobs");
+        assert_eq!(suspected_mods[0].mod_name_normalized, "alexsmobs");
+        assert_eq!(suspected_mods[0].mod_version, "1.22.9");
+        assert_eq!(suspected_mods[0].issue_tracker.as_ref().unwrap(), "https://github.com/Alex-the-666/AlexsMobs/issues");
+    }
 }
