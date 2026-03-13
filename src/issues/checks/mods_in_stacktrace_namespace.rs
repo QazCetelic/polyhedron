@@ -7,7 +7,14 @@ pub(crate) fn check_mods_in_stacktrace_namespace<'a>(mod_lookup_map: &BTreeMap<S
 	for stacktrace in stacktraces {
 		for line in &stacktrace.lines {
 			// Looks for mod name in stacktrace classname
-			let parts = line.class.split('.');
+			let parts: std::str::Split<'_, char> = line.class.split('.');
+
+			// Skip if it's a loader or launcher
+			let is_loader = parts.clone().any(|part| part == "loader" || part == "launcher");
+			if is_loader {
+				continue;
+			}
+
 			for part in parts {
 				if let Some(mod_name) = mod_lookup_map.get(part) {
 					mods.insert(mod_name.to_string());
@@ -242,4 +249,44 @@ java.lang.NullPointerException: Parameter specified as non-null is null: method 
 		assert_eq!(mods.len(), 1);
 		assert!(mods.contains("essential_1-3-1-1_forge_1-8-9"))
     }
+
+	#[test]
+	fn avoid_blaming_loader() {
+		let shortend_header_fragment = r#"
+Mods:
+  [✔] entityculling-forge-mc1.8.9-1.5.0
+  [✔] essential_1-3-1-1_forge_1-8-9
+  [✔] EvergreenHUD-1.8.9-forge-2.1.4
+  [✔] NotSoEssential-Forge-1.0.3
+  [✔] Optibye-1.0.0-dep
+  "#;
+        let indexed_header = IndexedLogHeader::index_header(shortend_header_fragment);
+
+		let log_fragment = r#"[01:30:09] [main/ERROR] [LaunchWrapper]: Unable to launch
+java.lang.RuntimeException: java.lang.reflect.InvocationTargetException
+	at gg.essential.loader.stage0.EssentialSetupTweaker.<init>(EssentialSetupTweaker.java:28) ~[Essential_1-3-10-4_forge_1-12-2.jar:?]
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method) ~[?:1.8.0_202]
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62) ~[?:1.8.0_202]
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45) ~[?:1.8.0_202]
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423) ~[?:1.8.0_202]
+	at java.lang.Class.newInstance(Class.java:442) ~[?:1.8.0_202]
+	at net.minecraft.launchwrapper.Launch.launch(Launch.java:98) [launchwrapper-1.12.jar:?]
+	at net.minecraft.launchwrapper.Launch.main(Launch.java:28) [launchwrapper-1.12.jar:?]
+	at org.prismlauncher.launcher.impl.StandardLauncher.launch(StandardLauncher.java:115) [NewLaunch.jar:?]
+	at org.prismlauncher.EntryPoint.listen(EntryPoint.java:129) [NewLaunch.jar:?]
+	at org.prismlauncher.EntryPoint.main(EntryPoint.java:70) [NewLaunch.jar:?]
+Caused by: java.lang.reflect.InvocationTargetException
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method) ~[?:1.8.0_202]
+	at sun.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62) ~[?:1.8.0_202]
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45) ~[?:1.8.0_202]
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423) ~[?:1.8.0_202]
+	at gg.essential.loader.stage0.EssentialSetupTweaker.loadStage1(EssentialSetupTweaker.java:53) ~[Essential_1-3-10-4_forge_1-12-2.jar:?]
+	at gg.essential.loader.stage0.EssentialSetupTweaker.<init>(EssentialSetupTweaker.java:26) ~[Essential_1-3-10-4_forge_1-12-2.jar:?]
+	... 10 more"#;
+		let entries = LogEntry::from_lines(log_fragment.lines());
+		let stacktraces = Stacktrace::from_lines(entries.last().unwrap().contents.lines()).collect::<Vec<Stacktrace>>();
+		assert!(!stacktraces.is_empty());
+		let mod_lookup_map = indexed_header.get_mod_name_lookup_map().unwrap();
+		assert_eq!(check_mods_in_stacktrace_namespace(&mod_lookup_map, &stacktraces), None);
+	}
 }

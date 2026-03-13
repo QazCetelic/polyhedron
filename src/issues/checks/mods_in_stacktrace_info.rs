@@ -8,12 +8,12 @@ pub(crate) fn check_mods_in_stacktrace_info<'a>(mods_in_header: &[ModInfo], stac
 	for stacktrace in stacktraces {
 		for line in &stacktrace.lines {
 			if let Some(info) = line.extract_source_info() {
-                if let Some(jar_name) = info.source_name.strip_suffix(".jar") { 
-                    if mods_set.contains(jar_name) {
-                        mods.insert(info.source_name);
-                    }
-                }
-            }
+				if let Some(jar_name) = info.source_name.strip_suffix(".jar") { 
+					if mods_set.contains(jar_name) {
+						mods.insert(info.source_name);
+					}
+				}
+      		}
 		}
 	}
     (!mods.is_empty()).then_some(Issue::ModsFoundInStacktraceInfo(mods))
