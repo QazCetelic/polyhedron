@@ -34,22 +34,32 @@ pub struct ReadLog {
     pub recommended_java_version: Option<RecommendedJavaVersion>,
 }
 
-pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
+// We don't need to check the entire log for crashes, because those should only be visible at the end. This improves performance and reduces false positives.
+const fn max(a: usize, b: usize) -> usize { [a, b][(a < b) as usize] }
+const LAST_ENTRIES_LEN: usize = max(LAST_ENTRIES_STACKTRACES_LEN, max(LAST_ENTRIES_LAST_STACKTRACES_LEN, max(LAST_ENTRIES_LAST_STACKTRACES_LEN, max(LAST_ENTRIES_CRASH_REPORT_LEN, max(LAST_ENTRIES_JRE_LEN, LAST_ENTRIES_CHECKED_LEN)))));
+const LAST_ENTRIES_STACKTRACES_LEN: usize = 25;
+const LAST_ENTRIES_LAST_STACKTRACES_LEN: usize = 3;
+const LAST_ENTRIES_CRASH_REPORT_LEN: usize = 25;
+const LAST_ENTRIES_JRE_LEN: usize = 3;
+const LAST_ENTRIES_CHECKED_LEN: usize = 10;
+
+pub fn read_log<R: BufRead>(reader: R, discard_entries: bool) -> Result<ReadLog, ReadLogError> {
     let mut lines = reader.lines().peekable();
-    let first_line = lines.peek().ok_or(ReadLogError::Empty)?.as_ref().map_err(|e| ReadLogError::Encoding(e.kind()))?;
-    let launcher_info = LauncherInfo::from_first_line(&first_line);
+    let _ = lines.peek().ok_or(ReadLogError::Empty)?.as_ref().map_err(|e| ReadLogError::Encoding(e.kind()))?;
 
-    let header = collect_header(&mut lines)?;
-
+    let header = collect_header_string(&mut lines)?;
     let index = LogHeaderIndex::index_header(&header);
     let indexed_header = IndexedLogHeader::from_index(index.clone(), &header);
-    
-    let entries: Vec<LogEntry> = collect_all_entries(&mut lines)?;
-    let crash_report = collect_crash_report(&header, &entries);
-    let stacktraces = collect_stacktraces(&header, &entries);
 
-    let exit_code = entries.last().map(|e| extract_exit_code(&e.contents)).unwrap_or_else(|| extract_exit_code(&header));
-    let mut issues = collect_issues(&indexed_header, &entries, crash_report.as_ref(), &stacktraces, exit_code.map(|(_lang, code)| code));
+    let mut issues = Vec::new();
+    
+    let entries: Vec<LogEntry> = collect_entries(&mut lines, &indexed_header, &mut issues, discard_entries)?;
+    let last_entries = entries.get((entries.len().saturating_sub(LAST_ENTRIES_LEN))..).unwrap_or(&entries);
+
+    let crash_report = collect_crash_report(&header, &last_entries);
+    let stacktraces = collect_stacktraces(&header, &last_entries);
+    let exit_code = last_entries.last().map(|e| extract_exit_code(&e.contents)).unwrap_or_else(|| extract_exit_code(&header));
+    collect_issues(&mut issues, &indexed_header, &entries, crash_report.as_ref(), &stacktraces, exit_code.map(|(_lang, code)| code));
 
     let jre_fatal_error: Option<JreFatalError> = collect_jre_fatal_error(&header, &entries);
     if let Some(report) = jre_fatal_error.as_ref() {
@@ -61,6 +71,7 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
     let problematic_mods = collect_problematic_mods(&issues, indexed_header.get_mod_name_lookup_map());
     let recommended_java_version = recommend_java_version(&issues);
     let header_info = LogHeaderInfo::from_indexed_header(&indexed_header);
+    let launcher_info = LauncherInfo::from_first_line(&header);
 
     Ok(ReadLog {
         launcher_info,
@@ -79,7 +90,44 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
     })
 }
 
-fn collect_all_entries<R: BufRead>(lines: &mut std::iter::Peekable<std::io::Lines<R>>) -> Result<Vec<LogEntry>, ReadLogError> {
+fn collect_entries<R: BufRead>(lines: &mut std::iter::Peekable<std::io::Lines<R>>, header: &IndexedLogHeader, issues: &mut Vec<Issue>, discard_entries: bool) -> Result<Vec<LogEntry>, ReadLogError> {
+    if discard_entries {
+        collect_entries_discard_most(lines, header, issues)
+    }
+    else {
+        collect_entries_discard_none(lines, header, issues)
+    }
+}
+
+/// Collects entries and scans them for issues while discarding old entries as new come in
+fn collect_entries_discard_most<R: BufRead>(lines: &mut std::iter::Peekable<std::io::Lines<R>>, header: &IndexedLogHeader, issues: &mut Vec<Issue>) -> Result<Vec<LogEntry>, ReadLogError> {
+    let mut entries: Vec<LogEntry> = Vec::new();
+    let mut parser =  LogEntryParser::new();
+
+    fn add_entry(entries: &mut Vec<LogEntry>, entry: Option<LogEntry>, header: &IndexedLogHeader, issues: &mut Vec<Issue>) {
+        if let Some(entry) = entry {
+            entries.push(entry);
+            const DRAIN_BUFFER: usize = 15; // Prevent draining too often
+            if entries.len() > (LAST_ENTRIES_LEN + DRAIN_BUFFER) {
+                let to_keep = entries.len().saturating_sub(LAST_ENTRIES_LEN);
+                let entries = entries.drain(..to_keep).collect::<Vec<LogEntry>>();
+                collect_issues_all_entries(issues, header, &entries);
+            }
+        }
+    }
+
+    for line in lines {
+        let line = line.map_err(|e| ReadLogError::Encoding(e.kind()))?;
+        add_entry(&mut entries, parser.parse_line(&line), header, issues);
+    }
+    add_entry(&mut entries, parser.finalize(), header, issues);
+    collect_issues_all_entries(issues, header, &entries);
+
+    Ok(entries)
+}
+
+// Collects all entries and then scans them for issues in a single pass
+fn collect_entries_discard_none<R: BufRead>(lines: &mut std::iter::Peekable<std::io::Lines<R>>, header: &IndexedLogHeader, issues: &mut Vec<Issue>) -> Result<Vec<LogEntry>, ReadLogError> {
     let mut entries: Vec<LogEntry> = Vec::new();
     let mut parser =  LogEntryParser::new();
     for line in lines {
@@ -91,6 +139,7 @@ fn collect_all_entries<R: BufRead>(lines: &mut std::iter::Peekable<std::io::Line
     if let Some(entry) = parser.finalize() {
         entries.push(entry);
     }
+    collect_issues_all_entries(issues, header, &entries);
     Ok(entries)
 }
 
@@ -98,7 +147,7 @@ fn collect_jre_fatal_error(header: &str, entries: &[LogEntry]) -> Option<JreFata
     if let Some(report) = JreFatalError::parse(&header) {
         return Some(report);
     }
-    for entry in entries.iter().rev().take(3) { // We don't check that far because this should always be at the bottom
+    for entry in entries.iter().rev().take(LAST_ENTRIES_JRE_LEN) {
         if let Some(report) = JreFatalError::parse(&entry.contents) {
             return Some(report);
         }
@@ -112,7 +161,7 @@ fn collect_stacktraces(header: &str, entries: &[LogEntry]) -> Vec<Stacktrace> {
     for stacktrace in stacktrace_iter {
         stacktraces.push(stacktrace);
     }
-    for entry in entries.iter().rev().take(25) {
+    for entry in entries.iter().rev().take(LAST_ENTRIES_STACKTRACES_LEN) {
         let stacktrace_iter = Stacktrace::from_lines(entry.contents.lines());
         for stacktrace in stacktrace_iter {
             stacktraces.push(stacktrace);
@@ -121,7 +170,7 @@ fn collect_stacktraces(header: &str, entries: &[LogEntry]) -> Vec<Stacktrace> {
     return stacktraces;
 }
 
-fn collect_header<R: BufRead>(lines: &mut std::iter::Peekable<std::io::Lines<R>>) -> Result<String, ReadLogError> {
+fn collect_header_string<R: BufRead>(lines: &mut std::iter::Peekable<std::io::Lines<R>>) -> Result<String, ReadLogError> {
     let mut header_buffer = String::new();
     loop {
         if let Some(lr) = lines.peek() {
@@ -142,7 +191,7 @@ fn collect_crash_report(header: &str, entries: &[LogEntry]) -> Option<CrashRepor
     if let Some(report) = CrashReport::parse(header) {
         return Some(report);
     }
-    for entry in entries.iter().rev().take(75) {
+    for entry in entries.iter().rev().take(LAST_ENTRIES_CRASH_REPORT_LEN) {
         if let Some(report) = CrashReport::parse(&entry.contents) {
             return Some(report);
         }
@@ -161,9 +210,7 @@ fn collect_issues_all_entries(issues: &mut Vec<Issue>, header: &IndexedLogHeader
     }
 }
 
-fn collect_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry], crash_report: Option<&CrashReport>, stacktraces: &[Stacktrace], exit_code: Option<i32>) -> Vec<Issue> {
-    let mut issues = Vec::new();
-    
+fn collect_issues(issues: &mut Vec<Issue>, header: &IndexedLogHeader<'_>, entries: &[LogEntry], crash_report: Option<&CrashReport>, stacktraces: &[Stacktrace], exit_code: Option<i32>) {
     for header_check in CHECKS_HEADER {
         if let Some(issue) = header_check(header) {
             issues.push(issue);
@@ -185,7 +232,7 @@ fn collect_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry], crash_rep
         }
     }
     else {
-        let last_stacktraces: Vec<Stacktrace> = stacktraces.iter().rev().take(3).map(|st| st.clone()).collect();
+        let last_stacktraces: Vec<Stacktrace> = stacktraces.iter().rev().take(LAST_ENTRIES_LAST_STACKTRACES_LEN).map(|st| st.clone()).collect();
         for build_last_stacktrace_check in CHECKS_LAST_STACKTRACES {
             let crash_report_check: Box<dyn Fn(&[Stacktrace]) -> Option<Issue>> = build_last_stacktrace_check(header);
             if let Some(issue) = crash_report_check(&last_stacktraces) {
@@ -202,10 +249,9 @@ fn collect_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry], crash_rep
         }
     }
 
-    collect_issues_all_entries(&mut issues, header, entries);
     for build_entry_check in CHECKS_LAST_ENTRIES {
         let entry_check = build_entry_check(header);
-        for entry in entries.iter().rev().take(10) {
+        for entry in entries.iter().rev().take(LAST_ENTRIES_CHECKED_LEN) {
             if let Some(issue) = entry_check(entry) {
                 issues.push(issue);
             }
@@ -232,6 +278,4 @@ fn collect_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry], crash_rep
             }
         }
     }
-
-    issues
 }
