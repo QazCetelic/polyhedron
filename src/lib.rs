@@ -39,87 +39,32 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
     let first_line = lines.peek().ok_or(ReadLogError::Empty)?.as_ref().map_err(|e| ReadLogError::Encoding(e.kind()))?;
     let launcher_info = LauncherInfo::from_first_line(&first_line);
 
-    let mut header_buffer = String::new();
+    let header = collect_header(&mut lines)?;
 
-    loop {
-        if let Some(lr) = lines.peek() {
-            let line = lr.as_ref().map_err(|e| ReadLogError::Encoding(e.kind()))?;
-            if let None = LogPrefix::parse(&line) {
-                header_buffer.push_str(&line);
-                header_buffer.push('\n');
-                lines.next();
-                continue;
-            }
-        }
-        break;
-    }
-    let index = LogHeaderIndex::index_header(&header_buffer);
-    let indexed_header = IndexedLogHeader::from_index(index.clone(), &header_buffer);
-    let header_info = LogHeaderInfo::from_indexed_header(&indexed_header);
-
-    let header_crash_report = CrashReport::parse(&header_buffer);
+    let index = LogHeaderIndex::index_header(&header);
+    let indexed_header = IndexedLogHeader::from_index(index.clone(), &header);
     
-    let mut entries: Vec<LogEntry> = Vec::new();
-    let mut parser =  LogEntryParser::new();
-    for line in lines {
-        let line = line.map_err(|e| ReadLogError::Encoding(e.kind()))?;
-        if let Some(entry) = parser.parse_line(&line) {
-            entries.push(entry);
-        }
-    }
-    if let Some(entry) = parser.finalize() {
-        entries.push(entry);
-    }
+    let entries: Vec<LogEntry> = collect_all_entries(&mut lines)?;
+    let crash_report = collect_crash_report(&header, &entries);
+    let stacktraces = collect_stacktraces(&header, &entries);
 
-    let mut crash_report = header_crash_report;
-    if let Some(report) = CrashReport::parse(&header_buffer) {
-        crash_report = Some(report);
-    }
-    for entry in entries.iter().rev().take(75) {
-        if let Some(report) = CrashReport::parse(&entry.contents) {
-            crash_report = Some(report);
-            break;
-        }
-    }
+    let exit_code = entries.last().map(|e| extract_exit_code(&e.contents)).unwrap_or_else(|| extract_exit_code(&header));
+    let mut issues = collect_issues(&indexed_header, &entries, crash_report.as_ref(), &stacktraces, exit_code.map(|(_lang, code)| code));
 
-    let mut stacktraces = Vec::new();
-    let stacktrace_iter = Stacktrace::from_lines(header_buffer.lines());
-    for stacktrace in stacktrace_iter {
-        stacktraces.push(stacktrace);
-    }
-    for entry in entries.iter().rev().take(25) {
-        let stacktrace_iter = Stacktrace::from_lines(entry.contents.lines());
-        for stacktrace in stacktrace_iter {
-            stacktraces.push(stacktrace);
-        }
-    }
-
-    let indexed_header = IndexedLogHeader::from_index(index.clone(), &header_buffer);
-    let exit_code = entries.last().map(|e| extract_exit_code(&e.contents)).unwrap_or_else(|| extract_exit_code(&header_buffer));
-
-    let mut issues = find_issues(&indexed_header, &entries, crash_report.as_ref(), &stacktraces, exit_code.map(|(_lang, code)| code));
-
-    let mut jre_fatal_error: Option<JreFatalError> = None;
-    if let Some(report) = JreFatalError::parse(&header_buffer) {
-        jre_fatal_error = Some(report.clone());
-        issues.push(Issue::FatalErrorJre(Box::new(report)));
-    }
-    for entry in entries.iter().rev().take(3) { // We don't check that far because this should always be at the bottom
-        if let Some(report) = JreFatalError::parse(&entry.contents) {
-            jre_fatal_error = Some(report.clone());
-            issues.push(Issue::FatalErrorJre(Box::new(report)));
-            break;
-        }
+    let jre_fatal_error: Option<JreFatalError> = collect_jre_fatal_error(&header, &entries);
+    if let Some(report) = jre_fatal_error.as_ref() {
+        issues.push(Issue::FatalErrorJre(Box::new(report.clone())));
     }
 
     issues.dedup();
 
     let problematic_mods = collect_problematic_mods(&issues, indexed_header.get_mod_name_lookup_map());
     let recommended_java_version = recommend_java_version(&issues);
+    let header_info = LogHeaderInfo::from_indexed_header(&indexed_header);
 
     Ok(ReadLog {
         launcher_info,
-        header: header_buffer,
+        header,
         header_info: header_info,
         header_index: index,
         entries,
@@ -134,21 +79,89 @@ pub fn read_log<R: BufRead>(reader: R) -> Result<ReadLog, ReadLogError> {
     })
 }
 
-pub fn find_exception_locations<R: BufRead>(mut reader: R) -> Option<Vec<String>> {
-    let mut text = String::new();
-    reader.read_to_string(&mut text).ok()?;
-    let stacktraces = Stacktrace::from_lines(text.lines());
-    let lines = stacktraces
-        .map(|s| s.lines)
-        .flatten()
-        .filter_map(|l| l.get_relative_path())
-        .map(|(path, line)| format!("{path}:{line}"))
-        .collect::<Vec<String>>();
-
-    Some(lines)
+fn collect_all_entries<R: BufRead>(lines: &mut std::iter::Peekable<std::io::Lines<R>>) -> Result<Vec<LogEntry>, ReadLogError> {
+    let mut entries: Vec<LogEntry> = Vec::new();
+    let mut parser =  LogEntryParser::new();
+    for line in lines {
+        let line = line.map_err(|e| ReadLogError::Encoding(e.kind()))?;
+        if let Some(entry) = parser.parse_line(&line) {
+            entries.push(entry);
+        }
+    }
+    if let Some(entry) = parser.finalize() {
+        entries.push(entry);
+    }
+    Ok(entries)
 }
 
-fn find_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry], crash_report: Option<&CrashReport>, stacktraces: &[Stacktrace], exit_code: Option<i32>) -> Vec<Issue> {
+fn collect_jre_fatal_error(header: &str, entries: &[LogEntry]) -> Option<JreFatalError> {
+    if let Some(report) = JreFatalError::parse(&header) {
+        return Some(report);
+    }
+    for entry in entries.iter().rev().take(3) { // We don't check that far because this should always be at the bottom
+        if let Some(report) = JreFatalError::parse(&entry.contents) {
+            return Some(report);
+        }
+    }
+    None
+}
+
+fn collect_stacktraces(header: &str, entries: &[LogEntry]) -> Vec<Stacktrace> {
+    let mut stacktraces: Vec<Stacktrace> = Vec::new();
+    let stacktrace_iter = Stacktrace::from_lines(header.lines());
+    for stacktrace in stacktrace_iter {
+        stacktraces.push(stacktrace);
+    }
+    for entry in entries.iter().rev().take(25) {
+        let stacktrace_iter = Stacktrace::from_lines(entry.contents.lines());
+        for stacktrace in stacktrace_iter {
+            stacktraces.push(stacktrace);
+        }
+    }
+    return stacktraces;
+}
+
+fn collect_header<R: BufRead>(lines: &mut std::iter::Peekable<std::io::Lines<R>>) -> Result<String, ReadLogError> {
+    let mut header_buffer = String::new();
+    loop {
+        if let Some(lr) = lines.peek() {
+            let line = lr.as_ref().map_err(|e| ReadLogError::Encoding(e.kind()))?;
+            if let None = LogPrefix::parse(&line) {
+                header_buffer.push_str(&line);
+                header_buffer.push('\n');
+                lines.next();
+                continue;
+            }
+        }
+        break;
+    }
+    Ok(header_buffer)
+}
+
+fn collect_crash_report(header: &str, entries: &[LogEntry]) -> Option<CrashReport> {
+    if let Some(report) = CrashReport::parse(header) {
+        return Some(report);
+    }
+    for entry in entries.iter().rev().take(75) {
+        if let Some(report) = CrashReport::parse(&entry.contents) {
+            return Some(report);
+        }
+    }
+    None
+}
+
+fn collect_issues_all_entries(issues: &mut Vec<Issue>, header: &IndexedLogHeader, entries: &[LogEntry]) {
+    for build_entry_check in CHECKS_ENTRIES {
+        let entry_check = build_entry_check(header);
+        for entry in entries {
+            if let Some(issue) = entry_check(entry) {
+                issues.push(issue);
+            }
+        }
+    }
+}
+
+fn collect_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry], crash_report: Option<&CrashReport>, stacktraces: &[Stacktrace], exit_code: Option<i32>) -> Vec<Issue> {
     let mut issues = Vec::new();
     
     for header_check in CHECKS_HEADER {
@@ -189,14 +202,7 @@ fn find_issues(header: &IndexedLogHeader<'_>, entries: &[LogEntry], crash_report
         }
     }
 
-    for build_entry_check in CHECKS_ENTRIES {
-        let entry_check = build_entry_check(header);
-        for entry in entries {
-            if let Some(issue) = entry_check(entry) {
-                issues.push(issue);
-            }
-        }
-    }
+    collect_issues_all_entries(&mut issues, header, entries);
     for build_entry_check in CHECKS_LAST_ENTRIES {
         let entry_check = build_entry_check(header);
         for entry in entries.iter().rev().take(10) {
