@@ -55,17 +55,17 @@ pub fn collect_problematic_mods(issues: &[Issue], mod_name_lookup: Option<BTreeM
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RecommendedJavaVersion {
-    pub major: Option<u8>,
+    pub major: u8,
     pub minor: Option<u16>,
 }
 
 pub fn recommend_java_version(issues: &[Issue]) -> Option<RecommendedJavaVersion> {
     for issue in issues {
         match issue {
-            Issue::ForgeJava => { return Some(RecommendedJavaVersion { major: Some(8), minor: Some(312) }) /* 8u312 or lower */ },
-            Issue::Lwjgl2JavaAbove8 => { return Some(RecommendedJavaVersion { major: Some(8), minor: None }) /* Java 8 or Temurin */ },
-            Issue::NettyJavaAbove8 => { return Some(RecommendedJavaVersion { major: Some(8), minor: None }) },
-            Issue::WrongJava(version) => { if let Some(ver) = version { return Some(RecommendedJavaVersion { major: Some(*ver), minor: None }) } },
+            Issue::ForgeJava => { return Some(RecommendedJavaVersion { major: 8, minor: Some(312) }) /* 8u312 or lower */ },
+            Issue::Lwjgl2JavaAbove8 => { return Some(RecommendedJavaVersion { major: 8, minor: None }) /* Java 8 or Temurin */ },
+            Issue::NettyJavaAbove8 => { return Some(RecommendedJavaVersion { major: 8, minor: None }) },
+            Issue::WrongJava(version) => { if let Some(ver) = version { return Some(RecommendedJavaVersion { major: *ver, minor: None }) } },
             _ => {},
         }
     }
