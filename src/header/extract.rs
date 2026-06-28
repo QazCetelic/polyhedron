@@ -348,4 +348,21 @@ mod tests {
             "C:/Users/REDACTED/AppData/Roaming/PrismLauncher/libraries/net/minecraftforge/fmlearlydisplay/1.20.1-47.4.10/fmlearlydisplay-1.20.1-47.4.10.jar"
         ]);
     }
+
+    #[test]
+    fn extract_from_header_4() {
+        let string = include_str!("test_data/header_4.log");
+        let index = IndexedLogHeader::index_header(string);
+        let mods = index.get_mods().expect("Failed to get mods");
+        assert_eq!(mods.iter().take(3).map(|m| m.name.to_string()).collect::<Vec<String>>(), vec![
+            "[1.21.1] SecurityCraft v1.10.1",
+            "accessories-neoforge-1.1.0-beta.53 1.21.1",
+            "AchievementOptimizer-neoforge-1.21.1-2.1.0"
+        ]);
+        assert_eq!(mods.iter().filter(|m| !m.enabled).take(3).map(|m| m.name.to_string()).collect::<Vec<String>>(), vec![
+            "chloride-NEOFORGE-mc1.21.1-v1.7.9.jar",
+            "createbetterfps-1.21.1-1.1.4.jar",
+            "create-dyn-light-2.3.1-sodium-sable.jar"
+        ]);
+    }
 }

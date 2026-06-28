@@ -130,8 +130,8 @@ impl FormattedIssueInfo {
                 description: "xrandr is missing and required for certain Minecraft versions using LWJGL 2.".to_string(),
             },
             Issue::InvalidFolderName(c) => FormattedIssueInfo {
-                title: "Invalid Folder Name".to_string(),
-                description: format!("The folder name is invalid. Please rename your folder to a name without a '{}'.", c),
+                title: format!("'{c}' in folder name"),
+                description: format!("The folder name is invalid. Please rename your folder to a name without a '{c}'."),
             },
             Issue::InstanceDataCorrupted => FormattedIssueInfo {
                 title: "Corrupted Instance Files".to_string(),

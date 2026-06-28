@@ -1,4 +1,3 @@
-
 pub struct IndexedLogHeader<'a> {
     pub index: LogHeaderIndex,
     pub text: &'a str,
@@ -54,95 +53,105 @@ impl LogHeaderIndex {
     }
 }
 
-// Very verbose, but can't think of a better way right now
+fn find_section_start(log_header: &str, start_index: usize, prefixes: &[&str]) -> Option<usize> {
+    let s = log_header.get(start_index..)?;
+    for prefix in prefixes {
+        if let Some(idx) = s.find(prefix) {
+            return Some(idx + start_index);
+        }
+    }
+    return None;
+}
+
+// Very verbose, but can't think of a better way right now that also avoids scanning the entire header over and over
 fn index(log_header: &str) -> LogHeaderIndex {
     let mut index = 0_usize; // Keeps track of the last found position to optimize searching
     let online_mode = log_header.find("Launched instance in");
     if let Some(p) = online_mode {
         index = p;
     }
-    let mc_folder_location = log_header.get(index..).and_then(|s| s.find("Minecraft folder is:")).map(|p| p + index);
+    let mc_folder_location = find_section_start(log_header, index, &["Minecraft folder is:"]);
     if let Some(p) = mc_folder_location {
         index = p;
     }
-    let java_path = log_header.get(index..).and_then(|s| s.find("Java path is:")).map(|p| p + index);
+    let java_path = find_section_start(log_header, index, &["Java path is:"]);
     if let Some(p) = java_path {
         index = p;
     }
-    let java_version = log_header.get(index..).and_then(|s| s.find("Java is version")).map(|p| p + index);
+    let java_version = find_section_start(log_header, index, &["Java is version"]);
     if let Some(p) = java_version {
         index = p;
     }
-    let pre_launch_command = log_header.get(index..).and_then(|s| s.find("Running Pre-Launch command:")).map(|p| p + index);
+    let pre_launch_command = find_section_start(log_header, index, &["Running Pre-Launch command:"]);
     if let Some(p) = pre_launch_command {
         index = p;
     }
-    let kernel_driver = log_header.get(index..).and_then(|s| s.find("Kernel driver in use:")).map(|p| p + index);
+    let kernel_driver = find_section_start(log_header, index, &["Kernel driver in use:"]);
     if let Some(p) = kernel_driver {
         index = p;
     }
-    let opengl_version = log_header.get(index..).and_then(|s| s.find("OpenGL version string:")).map(|p| p + index);
+    let opengl_version = find_section_start(log_header, index, &["OpenGL version string:"]);
     if let Some(p) = opengl_version {
         index = p;
     }
-    let main_class = log_header.get(index..).and_then(|s| s.find("Main Class:")).map(|p| p + index);
+    let main_class = find_section_start(log_header, index, &["Main Class:", "Main class:"]);
     if let Some(p) = main_class {
         index = p;
     }
-    let native_path = log_header.get(index..).and_then(|s| s.find("Native path:")).map(|p| p + index);
+    let native_path = find_section_start(log_header, index, &["Native path:", "Natives path:"]);
     if let Some(p) = native_path {
         index = p;
     }
-    let traits = log_header.get(index..).and_then(|s| s.find("Traits:")).map(|p| p + index);
+    let traits = find_section_start(log_header, 0, &["Traits:"]);
     if let Some(p) = traits {
         index = p;
     }
-    let libraries = log_header.get(index..).and_then(|s| s.find("Libraries:")).map(|p| p + index);
+    let libraries = find_section_start(log_header, 0, &["Libraries:"]);
     if let Some(p) = libraries {
         index = p;
     }
-    let native_libraries = log_header.get(index..).and_then(|s| s.find("Native libraries:")).map(|p| p + index);
+    let native_libraries = find_section_start(log_header, index, &["Native libraries:"]);
     if let Some(p) = native_libraries {
         index = p;
     }
-    let mods = log_header.get(index..).and_then(|s| s.find("Mods:")).map(|p| p + index);
+    let mods = find_section_start(log_header, 0, &["Mods:"]);
     if let Some(p) = mods {
         index = p;
     }
-    let params = log_header.get(index..).and_then(|s| s.find("Params:")).map(|p| p + index);
+    let params = find_section_start(log_header, 0, &["Params:", "Minecraft arguments:"]);
     if let Some(p) = params {
         index = p;
     }
-    let window_size = log_header.get(index..).and_then(|s| s.find("Window size:")).map(|p| p + index);
+    let window_size = find_section_start(log_header, index, &["Window size:"]);
     if let Some(p) = window_size {
         index = p;
     }
-    let launcher = log_header.get(index..).and_then(|s| s.find("Launcher:")).map(|p| p + index);
+    let launcher = find_section_start(log_header, 0, &["Launcher:"]);
     if let Some(p) = launcher {
         index = p;
     }
-    let java_arguments = log_header.get(index..).and_then(|s| s.find("Java Arguments:")).map(|p| p + index);
+    let java_arguments = find_section_start(log_header, index, &["Java Arguments:", "Java arguments:"]);
     if let Some(p) = java_arguments {
         index = p;
     }
-    let mc_process_id = log_header.get(index..).and_then(|s| s.find("Minecraft process ID:")).map(|p| p + index);
+    let mc_process_id = find_section_start(log_header, index, &["Minecraft process ID:"]);
     if let Some(p) = mc_process_id {
         index = p;
     }
-    let jvm_info = log_header.get(index..).and_then(|s| s.find("JVM info:")).map(|p| p + index);
+    let jvm_info = find_section_start(log_header, index, &["JVM info:"]);
     if let Some(p) = jvm_info {
         index = p;
     }
-    let current_time = log_header.get(index..).and_then(|s| s.find("Current Time:")).map(|p| p + index);
+    let current_time = find_section_start(log_header, index, &["Current Time:"]);
     if let Some(p) = current_time {
         index = p;
     }
-    let created_tmp_dir = log_header.get(index..).and_then(|s| s.find("Created Temporary Directory:")).map(|p| p + index);
+    let created_tmp_dir = find_section_start(log_header, index, &["Created Temporary Directory:"]);
     if let Some(p) = created_tmp_dir {
         index = p;
     }
-    let building_processors = log_header.get(index..).and_then(|s| s.find("Building Processors")).map(|p| p + index);
-    
+    let building_processors = find_section_start(log_header, index, &["Building Processors"]); 
+  
     LogHeaderIndex {
         online_mode,
         mc_folder_location,
@@ -198,5 +207,33 @@ mod tests {
         assert_eq!(locations.current_time, Some(22212));
         assert_eq!(locations.created_tmp_dir, Some(22246));
         assert_eq!(locations.building_processors, Some(22379));
+    }
+
+    #[test]
+    fn index_header_4() {
+        let log_header = include_str!("test_data/header_4.log");
+        let locations = index(&log_header);
+        assert_eq!(locations.online_mode, Some(43));
+        assert_eq!(locations.mc_folder_location, Some(817));
+        assert_eq!(locations.java_path, Some(916));
+        assert_eq!(locations.java_version, Some(1018));
+        assert_eq!(locations.pre_launch_command, None);
+        assert_eq!(locations.kernel_driver, None);
+        assert_eq!(locations.opengl_version, None);
+        assert_eq!(locations.main_class, Some(1439));
+        assert_eq!(locations.native_path, Some(27053));
+        assert_eq!(locations.traits, Some(13322));
+        assert_eq!(locations.libraries, Some(13438));
+        assert_eq!(locations.native_libraries, Some(27034));
+        assert_eq!(locations.mods, Some(1503));
+        assert_eq!(locations.params, Some(27143));
+        assert_eq!(locations.window_size, Some(27563));
+        assert_eq!(locations.launcher, Some(1420));
+        assert_eq!(locations.java_arguments, Some(27587));
+        assert_eq!(locations.mc_process_id, Some(27733));
+        assert_eq!(locations.jvm_info, Some(27763));
+        assert_eq!(locations.current_time, Some(27837));
+        assert_eq!(locations.created_tmp_dir, Some(27871));
+        assert_eq!(locations.building_processors, Some(28008));
     }
 }
