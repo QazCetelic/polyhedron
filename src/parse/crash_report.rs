@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap};
 
 use crate::{entries::time::LogTime, parse::stacktrace::model::Stacktrace};
 
@@ -7,7 +7,7 @@ use crate::{entries::time::LogTime, parse::stacktrace::model::Stacktrace};
 #[cfg_attr(feature = "dioxus", derive(Clone, PartialEq))]
 #[derive(Debug)]
 pub struct CrashReport {
-    pub time: LogTime,
+    pub time: Result<LogTime, String>,
     pub description: String,
     pub stacktrace: Vec<Stacktrace>,
     pub sections: BTreeMap<String, String>
@@ -20,7 +20,8 @@ impl CrashReport {
         // The remarks section sometimes contains additional comments about e.g. coremods that may be useful
         let (time_str, description_etc) = time_etc.split_once("Description: ")?;
         let time_str = time_str.trim_ascii_end();
-        let time = LogTime::parse(time_str)?; // Time can be in various formats
+        let time = LogTime::parse(time_str).ok_or_else(|| time_str.to_string()); // Time can be in various formats
+        debug_assert!(time.is_ok(), "Failed to parse time: {}", time_str);
         let (description, stacktrace_etc) = description_etc.split_once('\n')?;
         let description = description.trim_ascii_end().to_string();
         let (stacktrace, etc) = stacktrace_etc.split_once("A detailed walkthrough of the error, its code path and all known details is as follows:")?;
@@ -104,6 +105,17 @@ mod tests {
         let stacktrace = &report.stacktrace[0];
         assert_eq!(stacktrace.exception, "java.lang.NullPointerException");
         assert_eq!(stacktrace.message, "Initializing game");
+        let sytem_details = report.sections.get("System Details").expect("Failed to get System Details section");
+        let _tree = SectionTree::parse(sytem_details).expect("Failed to parse system details");
+    }
+
+    #[test]
+    fn crash_6() {
+        let text = include_str!("test_data/crash_6.log");
+        let report = CrashReport::parse(text).expect("Failed to parse crash report");
+        let stacktrace = &report.stacktrace[0];
+        assert_eq!(stacktrace.exception, "java.lang.IllegalStateException");
+        assert_eq!(stacktrace.message, "Failed to create Display window");
         let sytem_details = report.sections.get("System Details").expect("Failed to get System Details section");
         let _tree = SectionTree::parse(sytem_details).expect("Failed to parse system details");
     }

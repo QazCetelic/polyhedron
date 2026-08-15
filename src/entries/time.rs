@@ -73,6 +73,7 @@ impl Display for LogTime {
 
 // "17:45:36.659"
 fn parse_time(time: &str) -> Option<(u8, u8, u8, Option<u16>)> {
+    let (time, _timezone) = if let Some((time, tz)) = time.split_once(' ') {  (time, Some(tz)) } else { (time, None) };
     let (hms_part, millisecond) = if let Some((hms_str, ms_str)) = time.split_once('.') {
         (hms_str, Some(ms_str.parse::<u16>().ok()?))
     }
@@ -292,6 +293,17 @@ mod tests {
         assert_eq!(time.minute, 21);
         assert_eq!(time.second, 06);
         assert_eq!(time.millisecond, Some(036));
+    }
+
+    #[test]
+    fn time_zone() {
+        let time_str = "2025-11-16 19:15:32 CST";
+        let time = LogTime::parse(time_str).expect("Failed to parse time with timezone");
+        assert_eq!(time.date.map(|d| (d.day, d.month, d.year)), Some((16, 11, 2025)));
+        assert_eq!(time.hour, 19);
+        assert_eq!(time.minute, 15);
+        assert_eq!(time.second, 32);
+        assert!(time.millisecond.is_none());
     }
 
     #[test]
