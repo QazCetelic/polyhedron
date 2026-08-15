@@ -1,10 +1,10 @@
 use crate::{entries::entry::LogEntry, header::index::IndexedLogHeader, issues::{checks::*, issue::Issue}, parse::{crash_report::CrashReport, stacktrace::model::Stacktrace}};
 
 #[allow(dead_code)]
-pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) -> Option<Issue>>; 4] = [
-    |_header| { 
-        Box::new(fabric_internal::fabric_internal) 
-    },
+pub const CHECKS_TEXT: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&str) -> Option<Issue>>; 3] = [
+    // |_header| { 
+    //     Box::new(fabric_internal::fabric_internal) 
+    // },
     |_header| { 
         Box::new(java_32_bit::java_32_bit) 
     },

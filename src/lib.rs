@@ -42,6 +42,7 @@ const LAST_ENTRIES_LAST_STACKTRACES_LEN: usize = 3;
 const LAST_ENTRIES_CRASH_REPORT_LEN: usize = 25;
 const LAST_ENTRIES_JRE_LEN: usize = 3;
 const LAST_ENTRIES_CHECKED_LEN: usize = 10;
+const DRAIN_BUFFER: usize = 15; // Prevent draining too often
 
 pub fn read_log<R: BufRead>(reader: R, discard_entries: bool) -> Result<ReadLog, ReadLogError> {
     let mut lines = reader.lines().peekable();
@@ -58,7 +59,9 @@ pub fn read_log<R: BufRead>(reader: R, discard_entries: bool) -> Result<ReadLog,
 
     let crash_report = collect_crash_report(&header, &last_entries);
     let stacktraces = collect_stacktraces(&header, &last_entries);
-    let exit_code = last_entries.last().map(|e| extract_exit_code(&e.contents)).unwrap_or_else(|| extract_exit_code(&header));
+    let exit_code = last_entries.last().map(|e| extract_exit_code(&e.contents))
+        // Check last part of header if no log entries were found
+        .unwrap_or_else(|| extract_exit_code(&header.get(header.len().saturating_sub(500)..).unwrap_or(&header)));
     collect_issues(&mut issues, &indexed_header, &entries, crash_report.as_ref(), &stacktraces, exit_code.map(|(_lang, code)| code));
 
     let jre_fatal_error: Option<JreFatalError> = collect_jre_fatal_error(&header, &entries);
@@ -101,13 +104,12 @@ fn collect_entries<R: BufRead>(lines: &mut std::iter::Peekable<std::io::Lines<R>
 
 /// Collects entries and scans them for issues while discarding old entries as new come in
 fn collect_entries_discard_most<R: BufRead>(lines: &mut std::iter::Peekable<std::io::Lines<R>>, header: &IndexedLogHeader, issues: &mut Vec<Issue>) -> Result<Vec<LogEntry>, ReadLogError> {
-    let mut entries: Vec<LogEntry> = Vec::new();
+    let mut entries: Vec<LogEntry> = Vec::with_capacity(LAST_ENTRIES_LEN + DRAIN_BUFFER);
     let mut parser =  LogEntryParser::new();
 
     fn add_entry(entries: &mut Vec<LogEntry>, entry: Option<LogEntry>, header: &IndexedLogHeader, issues: &mut Vec<Issue>) {
         if let Some(entry) = entry {
             entries.push(entry);
-            const DRAIN_BUFFER: usize = 15; // Prevent draining too often
             if entries.len() > (LAST_ENTRIES_LEN + DRAIN_BUFFER) {
                 let to_keep = entries.len().saturating_sub(LAST_ENTRIES_LEN);
                 let entries = entries.drain(..to_keep).collect::<Vec<LogEntry>>();

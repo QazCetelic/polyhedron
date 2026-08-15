@@ -104,6 +104,13 @@ fn parse_iso_time(time: &str) -> Option<(u8, u8, u8, u16)> {
     Some((hour, minute, second, millisecond))
 }
 
+#[cfg(test)]
+fn check_date(date: &LogDate) {
+    assert!(date.year >= 1000, "Year should be at least 1000");
+    assert!(date.month >= 1 && date.month <= 12, "Month should be between 1 and 12");
+    assert!(date.day >= 1 && date.day <= 31, "Day should be between 1 and 31");
+}
+
 // "2025-10-30" -> {2025, 10, 30}
 fn parse_iso_date(date: &str) -> Option<LogDate> {
     let year: u16 = date.get(0..4)?.parse().ok()?;
@@ -111,6 +118,8 @@ fn parse_iso_date(date: &str) -> Option<LogDate> {
     let month: u8 = date.get(5..7)?.parse().ok()?;
     if date.get(7..8)? != "-" { return None; }
     let day: u8 = date.get(8..10)?.parse().ok()?;
+    #[cfg(test)]
+    check_date(&LogDate { day, month, year });
     Some(LogDate { day, month, year })
 }
 
@@ -121,6 +130,8 @@ fn parse_eu_date(date: &str) -> Option<LogDate> {
     let day: u8 = day_str.parse().ok()?;
     let month: u8 = month_str.parse().ok()?;
     let year: u16 = year_str.parse().ok()?;
+    #[cfg(test)]
+    check_date(&LogDate { day, month, year });
     Some(LogDate { day, month, year })
 }
 
@@ -134,6 +145,8 @@ fn parse_us_date(date: &str) -> Option<LogDate> {
         if y < 1000 { y + 2000 } else { y }
     }
     let year: u16 = correct_year(year_str.parse().ok()?);
+    #[cfg(test)]
+    check_date(&LogDate { day, month, year });
     Some(LogDate { day, month, year })
 }
 
@@ -156,9 +169,11 @@ fn parse_named_month_date(date: &str) -> Option<LogDate> {
         iter.next();
     }
     while let Some(c) = iter.next() {
-        year = year * 10 + (c.to_digit(10)? as u16);
+        year = year.checked_mul(10)? + (c.to_digit(10)? as u16);
     }
     let month: u8 = month_str_to_number(&month_name)?;
+    #[cfg(test)]
+    check_date(&LogDate { day, month, year });
     Some(LogDate { day, month, year })
 }
 
@@ -309,5 +324,12 @@ mod tests {
             let parsed = LogTime::parse(input).unwrap_or_else(|| panic!("Failed to parse time: {}", input));
             assert_eq!(parsed.to_string(), expected_output, "Failed for input: {}", input);
         }
+    }
+
+    #[test]
+    fn parse_named_month_date_overflow() {
+        let date_str = "04Dec20251234567890"; // Too long
+        let result = LogDate::parse(date_str, false);
+        assert!(result.is_none(), "Expected None for overflow date string");
     }
 }

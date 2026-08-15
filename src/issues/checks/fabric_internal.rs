@@ -2,6 +2,10 @@
 
 use crate::issues::issue::Issue;
 
+// Disabled
+// I was only able to find 1 log that contained this error (excluding the refraction test files) and it didn't even seem to be the real reason.
+// It also uses a lot of CPU cycles to scan through all the text
+#[allow(dead_code)]
 pub(crate) fn fabric_internal(text: &str) -> Option<Issue> {
     const CLASS_NOT_FOUND: &str = "Caused by: java.lang.ClassNotFoundException: ";
     let errors = [

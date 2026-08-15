@@ -124,6 +124,7 @@ impl<'a> IndexedLogHeader<'a> {
         while let Some(line) = lines.next() && line.starts_with("  ") { // Libraries are indented by two spaces
             let library_line = line.strip_prefix("  ")?;
             let (library, missing) = library_line.strip_suffix(" (missing)").map(|lib| (lib, true)).unwrap_or_else(|| (library_line, false));
+            debug_assert!(!library.is_empty(), "Library name should not be empty");
             libraries.push(LibraryInfo { name: library.to_string(), missing });
         }
         Some(libraries)
@@ -152,6 +153,7 @@ impl<'a> IndexedLogHeader<'a> {
                 "✘" => false,
                 _ => return None,
             };
+            debug_assert!(!name.is_empty(), "Mod name should not be empty");
             mods.push(ModInfo {
                 name: name.trim_end_matches(" (disabled)").to_string(),
                 enabled,

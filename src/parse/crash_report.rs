@@ -15,7 +15,7 @@ pub struct CrashReport {
 
 impl CrashReport {
     pub fn parse(text: &str) -> Option<CrashReport> {
-        let (_, report_etc) = text.split_once("---- Minecraft Crash Report ----")?;
+        let (_, report_etc) = text.split_once("---- Minecraft Crash Report ----").or_else(|| text.split_once("---- Minecraft Network Protocol Error Report ----"))?;
         let (_remarks, time_etc) = report_etc.split_once("Time: ")?;
         // The remarks section sometimes contains additional comments about e.g. coremods that may be useful
         let (time_str, description_etc) = time_etc.split_once("Description: ")?;
@@ -104,6 +104,17 @@ mod tests {
         let stacktrace = &report.stacktrace[0];
         assert_eq!(stacktrace.exception, "java.lang.NullPointerException");
         assert_eq!(stacktrace.message, "Initializing game");
+        let sytem_details = report.sections.get("System Details").expect("Failed to get System Details section");
+        let _tree = SectionTree::parse(sytem_details).expect("Failed to parse system details");
+    }
+
+    #[test]
+    fn crash_network_protocol() {
+        let text = include_str!("test_data/crash_network_protocol.log");
+        let report = CrashReport::parse(text).expect("Failed to parse crash report");
+        let stacktrace = &report.stacktrace[0];
+        assert_eq!(stacktrace.exception, "java.net.SocketException");
+        assert_eq!(stacktrace.message, "Connection reset");
         let sytem_details = report.sections.get("System Details").expect("Failed to get System Details section");
         let _tree = SectionTree::parse(sytem_details).expect("Failed to parse system details");
     }

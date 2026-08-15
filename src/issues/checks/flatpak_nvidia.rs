@@ -1,7 +1,9 @@
 use crate::{entries::entry::LogEntry, issues::issue::Issue};
 
 pub(crate) fn flatpak_nvidia(entry: &LogEntry) -> Option<Issue> {
-    if entry.contents.contains("org.lwjgl.LWJGLException: Could not choose GLX13 config") || entry.contents.contains("GLX: Failed to find a suitable GLXFBConfig") {
+	// Cap the length for performance reasons
+	let text_start = &entry.contents.get(..1000_usize).unwrap_or(&entry.contents);
+    if text_start.contains("org.lwjgl.LWJGLException: Could not choose GLX13 config") || text_start.contains("GLX: Failed to find a suitable GLXFBConfig") {
         Some(Issue::OutdatedFlatpakNvidiaDriver)
     }
     else {

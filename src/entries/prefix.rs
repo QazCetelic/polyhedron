@@ -16,6 +16,11 @@ pub struct LogPrefix {
 
 // Not fully to spec, but functional
 fn basic_strip_ansi_escape(mut line: &str) -> &str {
+    // Fast path: most lines have no ANSI escape sequences
+    if line.is_empty() || line.as_bytes()[0] != 27 {
+        return line; 
+    }
+
     while let Some(escape_pos) = line.find(27 as char) {
         let end_pos = line.get(escape_pos..).map(|l| l.find('m')).flatten();
         match end_pos {
