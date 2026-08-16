@@ -24,7 +24,7 @@ impl LogTime {
             return Some(time);
         }
         let (without_suffix, meridiem) = strip_meridiem(time_str);
-        let (date, time_part) = if let Some((date_str, time_str)) = without_suffix.split_once(' ') {
+        let (date, time_part) = if let Some((date_str, time_str)) = without_suffix.split_once(", ").or_else(|| without_suffix.split_once(' ')) {
             (Some(LogDate::parse(date_str, meridiem.is_some())?), time_str)
         }
         else {
@@ -124,13 +124,17 @@ fn parse_iso_date(date: &str) -> Option<LogDate> {
     Some(LogDate { day, month, year })
 }
 
+fn correct_year(y: u16) -> u16 { // 25 -> 2025
+    if y < 100 { y + 2000 } else { y }
+}
+
 // "02/12/2025" -> {2025, 12, 2}
 fn parse_eu_date(date: &str) -> Option<LogDate> {
     let (day_str, month_and_year) = date.split_once('/')?;
     let (month_str, year_str) = month_and_year.split_once('/')?;
     let day: u8 = day_str.parse().ok()?;
     let month: u8 = month_str.parse().ok()?;
-    let year: u16 = year_str.parse().ok()?;
+    let year: u16 = correct_year(year_str.parse().ok()?);
     #[cfg(test)]
     check_date(&LogDate { day, month, year });
     Some(LogDate { day, month, year })
@@ -142,16 +146,13 @@ fn parse_us_date(date: &str) -> Option<LogDate> {
     let (day_str, year_str) = day_and_year.split_once('/')?;
     let day: u8 = day_str.parse().ok()?;
     let month: u8 = month_str.parse().ok()?;
-    fn correct_year(y: u16) -> u16 { // 25 -> 2025
-        if y < 1000 { y + 2000 } else { y }
-    }
     let year: u16 = correct_year(year_str.parse().ok()?);
     #[cfg(test)]
     check_date(&LogDate { day, month, year });
     Some(LogDate { day, month, year })
 }
 
-// "04Dec2025" -> {2025, 12, 04}
+// "04Dec2025" -> {2025, 12, 04}, "05Nov.2025" -> {2025, 11, 05}
 fn parse_named_month_date(date: &str) -> Option<LogDate> {
     if date.len() < 9 {
         return None;
@@ -169,6 +170,9 @@ fn parse_named_month_date(date: &str) -> Option<LogDate> {
         month_name.push(*c);
         iter.next();
     }
+    if iter.peek().map(|c| *c == '.').unwrap_or(false) {
+        iter.next(); // Skip the dot if present
+    }
     while let Some(c) = iter.next() {
         year = year.checked_mul(10)? + (c.to_digit(10)? as u16);
     }
@@ -180,9 +184,9 @@ fn parse_named_month_date(date: &str) -> Option<LogDate> {
 
 /// Strips " AM" or " PM" suffix from the time string and indicates if it was PM.
 fn strip_meridiem(time_str: &str) -> (&str, Option<bool>) {
-    if let Some(stripped) = time_str.strip_suffix(" AM") {
+    if let Some(stripped) = time_str.strip_suffix(" AM").or_else(|| time_str.strip_suffix(" AM")) {
         (stripped, Some(false))
-    } else if let Some(stripped) = time_str.strip_suffix(" PM") {
+    } else if let Some(stripped) = time_str.strip_suffix(" PM").or_else(|| time_str.strip_suffix(" PM")) {
         (stripped, Some(true))
     } else {
         (time_str, None)
@@ -307,6 +311,17 @@ mod tests {
     }
 
     #[test]
+    fn comma() {
+        let time_str = "2/17/26, 2:41 PM";
+        let time = LogTime::parse(time_str).expect("Failed to parse time with comma");
+        assert_eq!(time.date.map(|d| (d.day, d.month, d.year)), Some((17, 2, 2026)));
+        assert_eq!(time.hour, 14);
+        assert_eq!(time.minute, 41);
+        assert_eq!(time.second, 0);
+        assert!(time.millisecond.is_none());
+    }
+
+    #[test]
     fn various() {
         let examples = vec![
             ("01:53:30", "01:53:30"),
@@ -330,6 +345,8 @@ mod tests {
             ("08:33:03.471", "08:33:03.471"),
             ("2024-07-11 04:30:53", "2024-07-11 04:30:53"),
             ("12/20/25 6:11 PM", "2025-12-20 18:11:00"),
+            ("05Nov.2025 14:25:17.426", "2025-11-05 14:25:17.426"),
+            ("12/17/25, 4:26 PM", "2025-12-17 16:26:00")
         ];
 
         for (input, expected_output) in examples {

@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 use thiserror::Error;
-use crate::{issues::checks::{critical_injection_failure::CriticalInjectionFailure, entrypoint_execution_errors::EntrypointExecutionErrors, incompatible_mods::IncompatibleModsInfo, suspected_mod::SuspectedModInfo}, parse::jre_fatal::JreFatalError};
+use crate::{issues::checks::{critical_injection_failure::CriticalInjectionFailure, entrypoint_execution_errors::EntrypointExecutionErrors, incompatible_mods::IncompatibleModsInfo, mod_version_conflicts::ModVersionConflictInfo, suspected_mod::SuspectedModInfo, unresolved_version_differences::UnresolvedVersionDifferences}, parse::{jre_fatal::JreFatalError, stacktrace::model::Stacktrace}};
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Error, Debug, PartialEq, Eq, Clone)]
@@ -94,4 +94,21 @@ pub enum Issue {
     ZipExtractFailure,
     #[error("Incompatible mods")]
     IncompatibleMods(Box<IncompatibleModsInfo>),
+    #[error("Exception caught from launcher")]
+    ExceptionCaughtFromLauncher(Vec<Stacktrace>),
+    #[error("Mods have unresolved version differences")]
+    UnresolvedVersionDifferences(Vec<UnresolvedVersionDifferences>),
+    #[error("Mod version conflicts")]
+    ModVersionConflicts(Vec<ModVersionConflictInfo>),
+}
+
+impl Issue {
+    /// Useful for chosing what to show first and what to highlight
+    pub fn importance(&self) -> i8 {
+        match self {
+            Issue::MixinApplyFailure(_) => 10,
+            Issue::EntrypointExecutionErrors(_) => 10,
+            _ => 0,
+        }
+    }
 }

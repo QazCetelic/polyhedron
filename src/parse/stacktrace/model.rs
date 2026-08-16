@@ -1,9 +1,7 @@
 use crate::parse::stacktrace::parse::valid_java_identifier;
 
-#[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "dioxus", derive(PartialEq))]
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Stacktrace {
     pub exception: String,
     pub message: String,
@@ -12,7 +10,7 @@ pub struct Stacktrace {
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[allow(dead_code)]
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq)]
 pub struct StacktraceLine {
     pub class: String,
     pub method: String,

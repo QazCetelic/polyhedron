@@ -41,3 +41,6 @@ pub mod instance_update_failed;
 pub mod error_initialization_vm;
 pub mod zip_extract_failure;
 pub mod incompatible_mods;
+pub mod exception_caught_from_launcher;
+pub mod unresolved_version_differences;
+pub mod mod_version_conflicts;

@@ -217,6 +217,24 @@ impl FormattedIssueInfo {
                     description: format!("Solution:\n{}\nDetails:\n{}", info.solution, info.details),
                 }
             },
+            Issue::ExceptionCaughtFromLauncher(stacktraces) => {
+                FormattedIssueInfo {
+                    title: "Exception caught from launcher".to_string(),
+                    description: stacktraces.first().map(|st| format!("{}: {}", st.exception, st.message)).unwrap_or_else(|| "Exception caught from launcher".to_string()),
+                }
+            },
+            Issue::UnresolvedVersionDifferences(items) => {
+                FormattedIssueInfo { 
+                    title: "Mods have unresolved version differences".to_string(),
+                    description: items.iter().map(|v| format!("{}: {} -> {}", v.mod_name, v.version_1, v.version_2)).collect::<Vec<_>>().join("\n")
+                }
+            },
+            Issue::ModVersionConflicts(mod_version_conflict_infos) => {
+                FormattedIssueInfo { 
+                    title: "Mod version conflicts".to_string(),
+                    description: mod_version_conflict_infos.iter().map(|v| format!("{} {}\n{}", v.mod_name, v.message, v.action)).collect::<Vec<_>>().join("\n")
+                }
+            },
         }
     }
 }

@@ -101,6 +101,9 @@ impl JreFatalError {
                 return Some(s);
             }
         }
+        if !parser.error.is_empty() || !parser.contents.is_empty() {
+            return Some(parser.complete());
+        }
         return None;
     }
 }
@@ -334,6 +337,26 @@ Compiled method (c2)   56043 16441   !   4       java.lang.invoke.MethodHandleIm
 # The crash happened outside the Java Virtual Machine in native code.
 # See problematic frame for where to report the bug.
 #"#;
+        let error_info = JreFatalError::parse(text).unwrap();
+        dbg!(error_info);
+    }
+
+    #[test]
+    fn example_8() {
+        let text = r#"#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x00007ffb94777b53, pid=1020, tid=8444
+#
+# JRE version: OpenJDK Runtime Environment Microsoft-9388422 (21.0.3 9) (build 21.0.3 9-LTS)
+# Java VM: OpenJDK 64-Bit Server VM Microsoft-9388422 (21.0.3 9-LTS, mixed mode, tiered, compressed oops, compressed class ptrs, g1 gc, windows-amd64)
+# Problematic frame:
+# V  [jvm.dll 0x207b53]
+#
+# No core dump will be written. Minidumps are not enabled by default on client versions of Windows
+#
+# An error report file with more information is saved as:
+# C:\Users\********\AppData\Roaming\PrismLauncher\instances\1.21.8\minecraft\hs_err_pid1020.log"#;
         let error_info = JreFatalError::parse(text).unwrap();
         dbg!(error_info);
     }

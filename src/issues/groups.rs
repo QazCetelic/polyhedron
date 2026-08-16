@@ -53,9 +53,12 @@ pub const CHECKS_LAST_STACKTRACES: [for<'a> fn(&IndexedLogHeader<'a>) -> Box<dyn
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_LAST_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&LogEntry) -> Option<Issue>>; 1] = [
+pub const CHECKS_LAST_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&LogEntry) -> Option<Issue>>; 2] = [
     |_header| {
         Box::new(|stacktraces| { incompatible_mods::incompatible_mods(stacktraces) })
+    },
+    |_header| {
+        Box::new(|stacktraces| { exception_caught_from_launcher::exception_caught_from_launcher_entry(stacktraces) })
     },
 ];
 
@@ -65,7 +68,7 @@ pub const CHECKS_ALL_STACKTRACES: [fn(&Stacktrace) -> Option<Issue>; 1] = [
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 10] = [
+pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 11] = [
     optifine::optifine_header,
     corrupted_instance::corrupted_instance,
     invalid_folder_name::invalid_folder_name_header,
@@ -76,11 +79,12 @@ pub const CHECKS_HEADER: [for<'a> fn(&IndexedLogHeader<'a>) -> Option<Issue>; 10
     missing_libraries::missing_libraries_header,
     instance_update_failed::instance_update_failed,
     error_initialization_vm::error_initialization_vm,
+    exception_caught_from_launcher::exception_caught_from_launcher_header,
     // outdated_launcher::outdated_launcher_header,
 ];
 
 #[allow(dead_code)]
-pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&LogEntry) -> Option<Issue>>; 23] = [
+pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&LogEntry) -> Option<Issue>>; 25] = [
     |header| {
         let java_version = header.get_java_version();
         Box::new(move |entry| intel_hd::intel_hd_entry(entry, java_version.as_ref()))
@@ -150,6 +154,12 @@ pub const CHECKS_ENTRIES: [for<'a, 'b> fn(&IndexedLogHeader<'a>) -> Box<dyn Fn(&
     },
     |_header| { 
         Box::new(|entry| wrong_java::unsupported_class_version(entry)) 
+    },
+    |_header| { 
+        Box::new(|entry| unresolved_version_differences::unresolved_version_differences(entry)) 
+    },
+    |_header| { 
+        Box::new(|entry| mod_version_conflicts::mod_version_conflicts(entry)) 
     },
 ];
 
